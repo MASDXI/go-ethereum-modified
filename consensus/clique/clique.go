@@ -68,6 +68,8 @@ var (
 
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
+
+	reCalculateRewardInterval = uint64(50)
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -138,6 +140,8 @@ var (
 	// errRecentlySigned is returned if a header is signed by an authorized entity
 	// that already signed a header recently, thus is temporarily not allowed to.
 	errRecentlySigned = errors.New("recently signed")
+
+	errFetchReward = errors.New("api provider not avaliable")
 )
 
 // SignerFn hashes and signs the data to be signed by a backing account.
@@ -569,6 +573,35 @@ func (c *Clique) Prepare(chain consensus.ChainHeaderReader, header *types.Header
 // consensus rules in clique, do nothing here.
 func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal) {
 	// No block rewards in PoA, so the state remains as is
+	// Retrieve the signature from the header extra-data, give reward
+	if len(header.Extra) > extraSeal {
+		number := header.Number.Uint64()
+		signature := header.Extra[len(header.Extra)-extraSeal:]
+		empty := bytes.Repeat([]byte{0x00}, extraSeal) //extraSeal 65
+		if number == 0 {
+
+		} else if bytes.Equal(signature, empty) {
+			//making block
+			signer := c.signer
+			accumulateRewards(chain.Config(), state, header, uncles, signer)
+		} else {
+			// Retrieve the snapshot needed to verify this header and cache it
+			snap, err := c.snapshot(chain, number-1, header.ParentHash, nil)
+			if err != nil {
+			} else {
+				signer, err := ecrecover(header, snap.sigcache)
+				if err != nil {
+				} else {
+					accumulateRewards(chain.Config(), state, header, uncles, signer)
+				}
+			}
+
+		}
+	}
+
+	// No block rewards in PoA, so the state remains as is and uncles are dropped
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	header.UncleHash = types.CalcUncleHash(nil)
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
@@ -714,6 +747,21 @@ func SealHash(header *types.Header) (hash common.Hash) {
 	encodeSigHeader(hasher, header)
 	hasher.(crypto.KeccakState).Read(hash[:])
 	return hash
+}
+
+func CalculateBlockReward() *big.Int {
+	// @TODO adding complecated logic here
+	return big.NewInt(100);
+}
+
+func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, signer common.Address) {
+
+	// Select the correct block reward based on chain progression
+	// if (lastseen - header.Number == reCalculateRewardInterval) {
+	blockReward := CalculateBlockReward()
+	reward := new(big.Int).Set(blockReward)
+	state.AddBalance(signer, reward)
+	// }
 }
 
 // CliqueRLP returns the rlp bytes which needs to be signed for the proof-of-authority
