@@ -764,6 +764,8 @@ func (c *Clique) accumulateRewards(config *params.ChainConfig, state *state.Stat
 	if (number%c.config.RewardEpoch == 0) {
 		blockReward := CalculateBlockReward() // calculated block reward can be change
 		reward := new(big.Int).Set(blockReward)
+		// @TODO due to Clique use BLOCK_NUMBER % SIGNER_COUNT == SIGNER_INDEX, signer whos get rewardEpoch are fixed.
+		// @RESEARCH rand() signer form SIGNER_INDEX applicable ?
 		state.AddBalance(signer, reward)
 	} else {
 		blockReward := big.NewInt(2e+3); // can be change to any value
