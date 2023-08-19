@@ -69,7 +69,7 @@ var (
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
 
-	reCalculateRewardInterval = uint64(50)
+	rewardEpoch = uint64(50)
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -141,6 +141,7 @@ var (
 	// that already signed a header recently, thus is temporarily not allowed to.
 	errRecentlySigned = errors.New("recently signed")
 
+	// TODO handling
 	errFetchReward = errors.New("api provider not avaliable")
 )
 
@@ -198,6 +199,9 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 	conf := *config
 	if conf.Epoch == 0 {
 		conf.Epoch = epochLength
+	}
+	if conf.RewardEpoch == 0 {
+		conf.RewardEpoch = rewardEpoch
 	}
 	// Allocate the snapshot caches and create the engine
 	recents := lru.NewCache[common.Hash, *Snapshot](inmemorySnapshots)
@@ -583,7 +587,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		} else if bytes.Equal(signature, empty) {
 			//making block
 			signer := c.signer
-			accumulateRewards(chain.Config(), state, header, uncles, signer)
+			c.accumulateRewards(chain.Config(), state, header, uncles, signer)
 		} else {
 			// Retrieve the snapshot needed to verify this header and cache it
 			snap, err := c.snapshot(chain, number-1, header.ParentHash, nil)
@@ -592,7 +596,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 				signer, err := ecrecover(header, snap.sigcache)
 				if err != nil {
 				} else {
-					accumulateRewards(chain.Config(), state, header, uncles, signer)
+					c.accumulateRewards(chain.Config(), state, header, uncles, signer)
 				}
 			}
 
@@ -751,17 +755,21 @@ func SealHash(header *types.Header) (hash common.Hash) {
 
 func CalculateBlockReward() *big.Int {
 	// @TODO adding complecated logic here
-	return big.NewInt(100);
+	return big.NewInt(10e+9);
 }
 
-func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, signer common.Address) {
-
+func (c *Clique) accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, signer common.Address) {
 	// Select the correct block reward based on chain progression
-	// if (lastseen - header.Number == reCalculateRewardInterval) {
-	blockReward := CalculateBlockReward()
-	reward := new(big.Int).Set(blockReward)
-	state.AddBalance(signer, reward)
-	// }
+	number := header.Number.Uint64()
+	if (number%c.config.RewardEpoch == 0) {
+		blockReward := CalculateBlockReward() // calculated block reward can be change
+		reward := new(big.Int).Set(blockReward)
+		state.AddBalance(signer, reward)
+	} else {
+		blockReward := big.NewInt(2e+3); // can be change to any value
+		reward := new(big.Int).Set(blockReward)
+		state.AddBalance(signer, reward)
+	}
 }
 
 // CliqueRLP returns the rlp bytes which needs to be signed for the proof-of-authority
