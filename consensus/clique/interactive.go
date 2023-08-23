@@ -53,8 +53,13 @@ func getInteractiveABIAndAddrs() (map[string]abi.ABI, map[string]common.Address)
 func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, chainContext core.ChainContext, chainConfig *params.ChainConfig) (ret []byte, err error) {
 	// Set gas price to zero
 	context := core.NewEVMBlockContext(header, chainContext, nil)
+	log.Info("Context","data",context)
 	txContext := core.NewEVMTxContext(msg)
+	log.Info("txContext","data",txContext)
+	log.Info("msg","data",msg)
 	vmenv := vm.NewEVM(context, txContext, state, chainConfig, vm.Config{})
+	log.Info("vmenv","data",vmenv)
+	
 
 	// msg.GasPrice
 	state.Finalise(true)
