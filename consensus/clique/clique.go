@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
+	// "math"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -649,6 +649,16 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 }
 
 func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) (*big.Int, error) {
+	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	if parent == nil {
+		log.Error("Can't get parent from header", "error", parent)
+		return big.NewInt(0), consensus.ErrUnknownAncestor
+	}
+	// stateDB, err := c.stateFn(parent.Root)
+	// if err != nil {
+	// 	log.Error("Can't get parent from header", "error", err)
+	// 	return big.NewInt(0), err
+	// }
 	contractName := nativeMintContractName
 	contractAddr := c.contractAddrs[contractName]
 
@@ -664,18 +674,18 @@ func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.
 
 	// TODO refactor executeMsg should not be zero
 	msg := &core.Message{
-		From:              header.Coinbase,
+		From:              parent.Coinbase,
 		To:                &contractAddr,
 		Value:             big.NewInt(0),
-		GasLimit:          math.MaxUint64,
+		GasLimit:          100000,
 		GasPrice:          big.NewInt(0),
 		GasFeeCap:         big.NewInt(0),
 		GasTipCap:         big.NewInt(0),
 		Data:              data,
 		AccessList:        nil,
-		SkipAccountChecks: false,
+		SkipAccountChecks: true,
 	}
-	result, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
+	result, err := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
 	if err != nil {
 		log.Error("Can't executeMsg", "error", err)
 		return  big.NewInt(0),err
@@ -687,7 +697,7 @@ func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.
 		log.Error("Can't unpack data for read", "error", err)
 		return  big.NewInt(0),err
 	}
-	// log.Info("ret","return",ret[0])
+	log.Info("ret","return",ret[0])
 	// TODO fix this logic ok return false
 	obj, ok := ret[0].(uint64)
 	if !ok {
