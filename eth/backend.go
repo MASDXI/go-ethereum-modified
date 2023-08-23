@@ -211,6 +211,10 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	}
 	eth.bloomIndexer.Start(eth.blockchain)
 
+	if cliqueEngine, ok := eth.engine.(*clique.Clique); ok {
+		cliqueEngine.SetStateFn(eth.blockchain.StateAt)
+	}
+
 	if config.BlobPool.Datadir != "" {
 		config.BlobPool.Datadir = stack.ResolvePath(config.BlobPool.Datadir)
 	}

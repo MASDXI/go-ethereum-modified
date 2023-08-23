@@ -40,6 +40,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/consensus/clique"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/txpool/legacypool"
@@ -2188,6 +2189,11 @@ func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (*core.BlockCh
 	if err != nil {
 		Fatalf("Can't create BlockChain: %v", err)
 	}
+
+	if cliqueEngine, ok := engine.(*clique.Clique); ok {
+		cliqueEngine.SetStateFn(chain.StateAt)
+	}
+
 	return chain, chainDb
 }
 

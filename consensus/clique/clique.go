@@ -22,12 +22,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	lru "github.com/ethereum/go-ethereum/common/lru"
@@ -68,9 +71,23 @@ var (
 
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
-
+	
 	rewardEpoch = uint64(50)
 )
+
+// System contract addresses.
+var (
+	nativeMintContractName = "nativemint"
+
+	blockRewardAddress = common.HexToAddress("0x0000000000000000000000000000000000001338")
+	nativeMintAddress = common.HexToAddress("0x0000000000000000000000000000000000001337")
+)
+
+type MINT struct {
+	address common.Address
+	amount *big.Int
+	blockNumber uint64
+}
 
 // Various error messages to mark blocks invalid. These should be private to
 // prevent engine specific errors from being referenced in the remainder of the
@@ -145,6 +162,8 @@ var (
 	errFetchReward = errors.New("api provider not avaliable")
 )
 
+type StateFn func(hash common.Hash) (*state.StateDB, error)
+
 // SignerFn hashes and signs the data to be signed by a backing account.
 type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]byte, error)
 
@@ -188,6 +207,11 @@ type Clique struct {
 	signFn SignerFn       // Signer function to authorize hashes with
 	lock   sync.RWMutex   // Protects the signer and proposals fields
 
+	stateFn StateFn // Function to get state by state root
+
+	abi           map[string]abi.ABI        // Interactive with system contracts
+	contractAddrs map[string]common.Address // system contracts address
+	
 	// The fields below are for testing only
 	fakeDiff bool // Skip difficulty verifications
 }
@@ -207,13 +231,22 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 	recents := lru.NewCache[common.Hash, *Snapshot](inmemorySnapshots)
 	signatures := lru.NewCache[common.Hash, common.Address](inmemorySignatures)
 
+	interactiveABI, interactiveAddrs := getInteractiveABIAndAddrs()
+
 	return &Clique{
 		config:     &conf,
 		db:         db,
 		recents:    recents,
 		signatures: signatures,
 		proposals:  make(map[common.Address]bool),
+		abi:           interactiveABI,
+		contractAddrs: interactiveAddrs,
 	}
+}
+
+// SetStateFn sets the function to get state.
+func (c *Clique) SetStateFn(fn StateFn) {
+	c.stateFn = fn
 }
 
 // Author implements consensus.Engine, returning the Ethereum address recovered
@@ -603,9 +636,70 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		}
 	}
 
+	err := c.getMintNative(chain, header)
+	if err != nil {
+	}
+	// 	//
+	// } else {
+	// 	state.AddBalance(data.address,data.amount)
+	// }
+
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = types.CalcUncleHash(nil)
+}
+
+func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.Header) (error) {
+	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	stateDB, err := c.stateFn(parent.Root)
+	if err != nil {
+		log.Error("Can't pack data for read", "error", err)
+		return err
+	}
+
+	contractName := nativeMintContractName
+	contractAddr := c.contractAddrs[contractName]
+
+	// method
+	method := "read"
+	// @cary use new punishContract Address after hardfork
+	data, err := c.abi[contractName].Pack(method)
+	if err != nil {
+		log.Error("Can't pack data for read", "error", err)
+		return err
+	}
+
+	msg := &core.Message{
+		From:              header.Coinbase,
+		To:                &contractAddr,
+		Value:             new(big.Int),
+		GasLimit:          math.MaxUint64,
+		GasPrice:          new(big.Int),
+		GasFeeCap:         new(big.Int),
+		GasTipCap:         new(big.Int),
+		Data:              data,
+		AccessList:        nil,
+		SkipAccountChecks: false,
+	}
+	result, err := executeMsg(msg, stateDB, parent, newChainContext(chain, c), chain.Config())
+	if err != nil {
+		return err
+	}
+
+	ret, err := c.abi[contractName].Unpack(method, result)
+	if err != nil {
+		return err
+	}
+	if ret != nil {
+		//
+	}
+
+	// obj, ok := ret[0].(MINT)
+	// if !ok {
+	// 	return err
+	// }
+	// log.Info("OK",obj)
+	return nil
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
