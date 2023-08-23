@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 type chainContext struct {
@@ -56,10 +57,12 @@ func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, c
 	vmenv := vm.NewEVM(context, txContext, state, chainConfig, vm.Config{})
 
 	// msg.GasPrice
-
+	state.Finalise(true)
 	ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
 
+	log.Info("ExecuteMsg","data",ret)
 	if err != nil {
+		log.Error("ExecuteMsg failed", "err", err, "ret", string(ret))
 		return ret, err
 	}
 

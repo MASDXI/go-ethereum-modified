@@ -636,27 +636,19 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		}
 	}
 
-	err := c.getMintNative(chain, header)
+	data, err := c.getMintNative(chain, header, state)
 	if err != nil {
+		log.Info("Error something")
+	} else {
+		state.AddBalance(nativeMintAddress, data)
 	}
-	// 	//
-	// } else {
-	// 	state.AddBalance(data.address,data.amount)
-	// }
 
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = types.CalcUncleHash(nil)
 }
 
-func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.Header) (error) {
-	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
-	stateDB, err := c.stateFn(parent.Root)
-	if err != nil {
-		log.Error("Can't pack data for read", "error", err)
-		return err
-	}
-
+func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) (*big.Int, error) {
 	contractName := nativeMintContractName
 	contractAddr := c.contractAddrs[contractName]
 
@@ -666,40 +658,45 @@ func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.
 	data, err := c.abi[contractName].Pack(method)
 	if err != nil {
 		log.Error("Can't pack data for read", "error", err)
-		return err
+		return  big.NewInt(0), err
 	}
+	log.Info("pack data for read","result",data)
 
+	// TODO refactor executeMsg should not be zero
 	msg := &core.Message{
 		From:              header.Coinbase,
 		To:                &contractAddr,
-		Value:             new(big.Int),
+		Value:             big.NewInt(0),
 		GasLimit:          math.MaxUint64,
-		GasPrice:          new(big.Int),
-		GasFeeCap:         new(big.Int),
-		GasTipCap:         new(big.Int),
+		GasPrice:          big.NewInt(0),
+		GasFeeCap:         big.NewInt(0),
+		GasTipCap:         big.NewInt(0),
 		Data:              data,
 		AccessList:        nil,
 		SkipAccountChecks: false,
 	}
-	result, err := executeMsg(msg, stateDB, parent, newChainContext(chain, c), chain.Config())
+	result, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
 	if err != nil {
-		return err
+		log.Error("Can't executeMsg", "error", err)
+		return  big.NewInt(0),err
 	}
+	log.Info("execute result","result",result)
 
 	ret, err := c.abi[contractName].Unpack(method, result)
 	if err != nil {
-		return err
+		log.Error("Can't unpack data for read", "error", err)
+		return  big.NewInt(0),err
 	}
-	if ret != nil {
-		//
+	// log.Info("ret","return",ret[0])
+	// TODO fix this logic ok return false
+	obj, ok := ret[0].(uint64)
+	if !ok {
+		// log.Error("Can't get data form return", "error", ok)
+		// return big.NewInt(0),err
 	}
-
-	// obj, ok := ret[0].(MINT)
-	// if !ok {
-	// 	return err
-	// }
-	// log.Info("OK",obj)
-	return nil
+	log.Info("ret","return",obj)
+	val := int64(obj)
+	return  big.NewInt(val), nil
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
