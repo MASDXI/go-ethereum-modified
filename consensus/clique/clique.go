@@ -699,14 +699,14 @@ func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.
 	}
 	log.Info("ret","return",ret[0])
 	// TODO fix this logic ok return false
-	obj, ok := ret[0].(uint64)
+	obj, ok := ret[0].(*big.Int)
 	if !ok {
 		// log.Error("Can't get data form return", "error", ok)
 		// return big.NewInt(0),err
 	}
 	log.Info("ret","return",obj)
-	val := int64(obj)
-	return  big.NewInt(val), nil
+	// val := int64(obj)
+	return  obj, nil
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
