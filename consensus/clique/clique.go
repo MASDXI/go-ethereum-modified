@@ -162,8 +162,6 @@ var (
 	errFetchReward = errors.New("api provider not avaliable")
 )
 
-type StateFn func(hash common.Hash) (*state.StateDB, error)
-
 // SignerFn hashes and signs the data to be signed by a backing account.
 type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]byte, error)
 
@@ -207,8 +205,6 @@ type Clique struct {
 	signFn SignerFn       // Signer function to authorize hashes with
 	lock   sync.RWMutex   // Protects the signer and proposals fields
 
-	stateFn StateFn // Function to get state by state root
-
 	abi           map[string]abi.ABI        // Interactive with system contracts
 	contractAddrs map[string]common.Address // system contracts address
 	
@@ -242,11 +238,6 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 		abi:           interactiveABI,
 		contractAddrs: interactiveAddrs,
 	}
-}
-
-// SetStateFn sets the function to get state.
-func (c *Clique) SetStateFn(fn StateFn) {
-	c.stateFn = fn
 }
 
 // Author implements consensus.Engine, returning the Ethereum address recovered
@@ -654,11 +645,6 @@ func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.
 		log.Error("Can't get parent from header", "error", parent)
 		return big.NewInt(0), consensus.ErrUnknownAncestor
 	}
-	// stateDB, err := c.stateFn(parent.Root)
-	// if err != nil {
-	// 	log.Error("Can't get parent from header", "error", err)
-	// 	return big.NewInt(0), err
-	// }
 	contractName := nativeMintContractName
 	contractAddr := c.contractAddrs[contractName]
 

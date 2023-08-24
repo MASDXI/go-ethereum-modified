@@ -2189,11 +2189,7 @@ func MakeChain(ctx *cli.Context, stack *node.Node, readonly bool) (*core.BlockCh
 	if err != nil {
 		Fatalf("Can't create BlockChain: %v", err)
 	}
-
-	if cliqueEngine, ok := engine.(*clique.Clique); ok {
-		cliqueEngine.SetStateFn(chain.StateAt)
-	}
-
+	
 	return chain, chainDb
 }
 
