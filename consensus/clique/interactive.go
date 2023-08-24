@@ -37,37 +37,31 @@ func (cc *chainContext) GetHeader(hash common.Hash, number uint64) *types.Header
 }
 
 func getInteractiveABIAndAddrs() (map[string]abi.ABI, map[string]common.Address) {
+	// Contract ABI map
 	abiMap := make(map[string]abi.ABI, 0)
 	tmpABI, _ := abi.JSON(strings.NewReader(nativeMintInteractiveABI))
 	abiMap[nativeMintContractName] = tmpABI
 
-	// Contract Addresses
+	// Contract Addresses map
 	addrs := make(map[string]common.Address, 0)
 
 	// v1 addresses
 	addrs[nativeMintContractName] = nativeMintAddress
-	return abiMap, addrs // TODO
+	return abiMap, addrs
 }
 
 // executeMsg executes transaction sent to system contracts.
 func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, chainContext core.ChainContext, chainConfig *params.ChainConfig) (ret []byte, err error) {
 	// Set gas price to zero
 	context := core.NewEVMBlockContext(header, chainContext, nil)
-	log.Info("Context","data",context)
 	txContext := core.NewEVMTxContext(msg)
-	log.Info("txContext","data",txContext)
-	log.Info("msg","data",msg)
 	vmenv := vm.NewEVM(context, txContext, state, chainConfig, vm.Config{})
-	log.Info("vmenv","data",vmenv)
 	
-
 	// msg.GasPrice
 	state.Finalise(true)
 	ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
-
-	log.Info("ExecuteMsg","data",ret)
 	if err != nil {
-		log.Error("ExecuteMsg failed", "err", err, "ret", string(ret))
+		log.Error("ExecuteMsg failed", "err", err, "return", string(ret))
 		return ret, err
 	}
 

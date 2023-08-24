@@ -157,9 +157,6 @@ var (
 	// errRecentlySigned is returned if a header is signed by an authorized entity
 	// that already signed a header recently, thus is temporarily not allowed to.
 	errRecentlySigned = errors.New("recently signed")
-
-	// TODO handling
-	errFetchReward = errors.New("api provider not avaliable")
 )
 
 // SignerFn hashes and signs the data to be signed by a backing account.
