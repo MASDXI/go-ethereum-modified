@@ -104,4 +104,6 @@ var (
 	// ErrBlobFeeCapTooLow is returned if the transaction fee cap is less than the
 	// blob gas fee of the block.
 	ErrBlobFeeCapTooLow = errors.New("max fee per blob gas less than block blob gas fee")
+
+	ErrSenderAddressNotAllowListed = errors.New("cannot issue transaction from non-allow listed address")
 )
