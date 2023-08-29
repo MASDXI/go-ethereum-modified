@@ -216,29 +216,15 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 			return fmt.Errorf("%w: tx nonce %v, gapped nonce %v", core.ErrNonceTooHigh, tx.Nonce(), gap)
 		}
 	}
-	// if opts.Config.Clique.IsKyc() {
-	// 	// calculate storage slot
-    addressTy, _ := abi.NewType("address","",nil)
 
-    arguments := abi.Arguments{
-        {
-            Type: addressTy,
-        },
-    }
-    bytes, _ := arguments.Pack(
-        from,
-        // big.NewInt(0),
-    )
-		log.Info("bytes", "data",string(bytes))
-		// fmt.Printf ("hash", "data",from.Hash())
-		txAllowListRole := (opts.State.GetState(common.HexToAddress("0x0000000000000000000000000000000000001339"),from.Hash()))
-		// translate hex form boolean
-		// return data
-		log.Info("txAllowListRole", "data",(txAllowListRole.Hex()))
-		if txAllowListRole.Hex() == "0x0000000000000000000000000000000000000000000000000000000000000000"  {
-			return fmt.Errorf("%w: %s", core.ErrSenderAddressNotAllowListed, from)
-		}
-	// }
+	// Customized function for ensure the transactor has permission to send transaction
+	txAllowListRole := (opts.State.GetState(common.HexToAddress("0x0000000000000000000000000000000000001339"),from.Hash()))
+	log.Info("txAllowListRole", "data",(txAllowListRole.Hex()))
+	// TODO: translate hex form boolean
+	if txAllowListRole.Hex() == "0x0000000000000000000000000000000000000000000000000000000000000000"  {
+		return fmt.Errorf("%w: %s", core.ErrSenderAddressNotAllowListed, from)
+	}
+
 	// Ensure the transactor has enough funds to cover the transaction costs
 	var (
 		balance = opts.State.GetBalance(from)
