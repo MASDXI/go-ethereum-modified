@@ -284,6 +284,9 @@ type ChainConfig struct {
 	GrayGlacierBlock    *big.Int `json:"grayGlacierBlock,omitempty"`    // Eip-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)
 	MergeNetsplitBlock  *big.Int `json:"mergeNetsplitBlock,omitempty"`  // Virtual fork after The Merge to use as a network splitter
 
+	// Parallel
+	ParallelSupport bool `json:"parallelSupport,omitempty"`	// supports parallel evm execution 
+
 	// Fork scheduling was switched from blocks to timestamps here
 
 	ShanghaiTime *uint64 `json:"shanghaiTime,omitempty"` // Shanghai switch time (nil = no fork, 0 = already on shanghai)
@@ -518,6 +521,10 @@ func (c *ChainConfig) IsVerkle(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.VerkleTime, time)
 }
 
+func (c *ChainConfig) IsParallel(flag bool) bool {
+	return isParallelBlockForked(c.ParallelSupport, flag)
+}
+
 // CheckCompatible checks whether scheduled fork transitions have been imported
 // with a mismatching chain configuration.
 func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, time uint64) *ConfigCompatError {
@@ -708,6 +715,13 @@ func isBlockForked(s, head *big.Int) bool {
 	return s.Cmp(head) <= 0
 }
 
+func isParallelBlockForked(s, head bool) bool {
+	if s == false || head == false {
+		return false
+	}
+	return true
+}
+
 func configBlockEqual(x, y *big.Int) bool {
 	if x == nil {
 		return y == nil
@@ -825,6 +839,7 @@ type Rules struct {
 	IsBerlin, IsLondon                                      bool
 	IsMerge, IsShanghai, IsCancun, IsPrague                 bool
 	IsVerkle                                                bool
+	IsParallel												bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -850,5 +865,6 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules 
 		IsCancun:         c.IsCancun(num, timestamp),
 		IsPrague:         c.IsPrague(num, timestamp),
 		IsVerkle:         c.IsVerkle(num, timestamp),
+		IsParallel:		  c.IsParallel(true), // TODO: @parallel
 	}
 }
