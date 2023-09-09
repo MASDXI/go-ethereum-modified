@@ -160,3 +160,9 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	vmenv := vm.NewEVM(blockContext, vm.TxContext{BlobHashes: tx.BlobHashes()}, statedb, config, cfg)
 	return applyTransaction(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
 }
+
+// TODO @FilteringTransaction
+// return non conflict transaction
+
+// TODO @ApplyNonConflictTransaction
+// applyTransaction in parallel way
