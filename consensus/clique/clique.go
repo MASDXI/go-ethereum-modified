@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	// "math"
+	"math"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -77,10 +77,10 @@ var (
 
 // System contract addresses.
 var (
-	nativeMintContractName = "nativemint"
+	committeeContractName = "committe"
 
-	blockRewardAddress = common.HexToAddress("0x0000000000000000000000000000000000001338")
-	nativeMintAddress = common.HexToAddress("0x0000000000000000000000000000000000001337")
+	committeeAddress = common.HexToAddress("0x0000000000000000000000000000000000001338")
+
 )
 
 type MINT struct {
@@ -624,11 +624,11 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		}
 	}
 
-	data, err := c.getMintNative(chain, header, state)
-	if err != nil {
-		log.Info("Error something")
-	} else {
-		state.AddBalance(nativeMintAddress, data)
+	if header.Number.Cmp(common.Big1) == 0 {
+		if err := c.initializeSystemContracts(chain, header, state); err != nil {
+			log.Error("Initialize system contracts failed", "err", err)
+			// return err
+		}
 	}
 
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
@@ -636,60 +636,43 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 	header.UncleHash = types.CalcUncleHash(nil)
 }
 
-func (c *Clique) getMintNative(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) (*big.Int, error) {
-	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
-	if parent == nil {
-		log.Error("Can't get parent from header", "error", parent)
-		return big.NewInt(0), consensus.ErrUnknownAncestor
-	}
-	contractName := nativeMintContractName
-	contractAddr := c.contractAddrs[contractName]
-
-	// method
-	method := "read"
-	// @cary use new punishContract Address after hardfork
-	data, err := c.abi[contractName].Pack(method)
+func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+	snap, err := c.snapshot(chain, 0, header.ParentHash, nil)
 	if err != nil {
-		log.Error("Can't pack data for read", "error", err)
-		return  big.NewInt(0), err
+		return err
 	}
-	log.Info("pack data for read","result",data)
 
-	// TODO refactor executeMsg should not be zero
-	msg := &core.Message{
-		From:              parent.Coinbase,
-		To:                &contractAddr,
-		Value:             big.NewInt(0),
-		GasLimit:          100000,
-		GasPrice:          big.NewInt(0),
-		GasFeeCap:         big.NewInt(0),
-		GasTipCap:         big.NewInt(0),
-		Data:              data,
-		AccessList:        nil,
-		SkipAccountChecks: true,
-	}
-	result, err := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
-	if err != nil {
-		log.Error("Can't executeMsg", "error", err)
-		return  big.NewInt(0),err
-	}
-	log.Info("execute result","result",result)
+	genesisValidators := snap.signers()
+	for _, contract := range getSystemContracts(c.abi, genesisValidators, common.HexToAddress("0x9784e7348e2A4EbDC059e0BCC575D874d96ce88c")) {
 
-	ret, err := c.abi[contractName].Unpack(method, result)
-	if err != nil {
-		log.Error("Can't unpack data for read", "error", err)
-		return  big.NewInt(0),err
+		state.SetCode(contract.address, contract.deployedBytecode)
+
+		data, err := contract.packFun()
+		if err != nil {
+			return err
+		}
+
+		systemAddress := common.HexToAddress("0x0000000000000000000000000000000000000000")
+		// msg := types.NewMessage(common.FromHex("0x0000000000000000000000000000000000000000"), &contract.addr, nonce, new(big.Int), math.MaxUint64, new(big.Int), new(big.Int), new(big.Int), data, nil, true)
+		msg := &core.Message{
+			From:              systemAddress,
+			To:                &contract.address,
+			Value:             big.NewInt(0),
+			GasLimit:          math.MaxUint64,
+			GasPrice:          big.NewInt(0),
+			GasFeeCap:         big.NewInt(0),
+			GasTipCap:         big.NewInt(0),
+			Data:              data,
+			AccessList:        nil,
+			SkipAccountChecks: true,
+		}
+		if ret, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config()); err != nil {
+			panic(string(ret))
+		}
+		
 	}
-	log.Info("ret","return",ret[0])
-	// TODO fix this logic ok return false
-	obj, ok := ret[0].(*big.Int)
-	if !ok {
-		// log.Error("Can't get data form return", "error", ok)
-		// return big.NewInt(0),err
-	}
-	log.Info("ret","return",obj)
-	// val := int64(obj)
-	return  obj, nil
+
+	return nil
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
@@ -837,25 +820,10 @@ func SealHash(header *types.Header) (hash common.Hash) {
 	return hash
 }
 
-func CalculateBlockReward() *big.Int {
-	// @TODO adding complecated logic here
-	return big.NewInt(10e+9);
-}
-
 func (c *Clique) accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, signer common.Address) {
-	// Select the correct block reward based on chain progression
-	number := header.Number.Uint64()
-	if (number%c.config.RewardEpoch == 0) {
-		blockReward := CalculateBlockReward() // calculated block reward can be change
-		reward := new(big.Int).Set(blockReward)
-		// @TODO due to Clique use BLOCK_NUMBER % SIGNER_COUNT == SIGNER_INDEX, signer whos get rewardEpoch are fixed.
-		// @RESEARCH rand() signer form SIGNER_INDEX applicable ?
-		state.AddBalance(signer, reward)
-	} else {
-		blockReward := big.NewInt(2e+3); // can be change to any value
-		reward := new(big.Int).Set(blockReward)
-		state.AddBalance(signer, reward)
-	}
+	blockReward := big.NewInt(10) // for test only
+	reward := new(big.Int).Set(blockReward)
+	state.AddBalance(signer, reward)
 }
 
 // CliqueRLP returns the rlp bytes which needs to be signed for the proof-of-authority

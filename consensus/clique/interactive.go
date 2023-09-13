@@ -39,14 +39,14 @@ func (cc *chainContext) GetHeader(hash common.Hash, number uint64) *types.Header
 func getInteractiveABIAndAddrs() (map[string]abi.ABI, map[string]common.Address) {
 	// Contract ABI map
 	abiMap := make(map[string]abi.ABI, 0)
-	tmpABI, _ := abi.JSON(strings.NewReader(nativeMintInteractiveABI))
-	abiMap[nativeMintContractName] = tmpABI
+
+	abiMap[committeeContractName], _ = abi.JSON(strings.NewReader(committeesInteractiveABI))
 
 	// Contract Addresses map
 	addrs := make(map[string]common.Address, 0)
 
 	// v1 addresses
-	addrs[nativeMintContractName] = nativeMintAddress
+	addrs[committeeContractName] = committeeAddress
 	return abiMap, addrs
 }
 
