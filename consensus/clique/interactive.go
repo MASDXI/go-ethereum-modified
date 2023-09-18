@@ -41,12 +41,15 @@ func getInteractiveABIAndAddrs() (map[string]abi.ABI, map[string]common.Address)
 	abiMap := make(map[string]abi.ABI, 0)
 
 	abiMap[committeeContractName], _ = abi.JSON(strings.NewReader(committeesInteractiveABI))
+	abiMap[supplyControlContractName], _ = abi.JSON(strings.NewReader(supplyControlInteractiveABI))
 
 	// Contract Addresses map
 	addrs := make(map[string]common.Address, 0)
 
 	// v1 addresses
 	addrs[committeeContractName] = committeeAddress
+	addrs[supplyControlContractName] = supplyControlAddress
+
 	return abiMap, addrs
 }
 

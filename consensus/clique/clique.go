@@ -637,7 +637,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		}
 	}
 
-	if enableSystemContract {
+	if header.Number.Cmp(common.Big1) == 0 && enableSystemContract   {
 		if err := c.initializeSystemContracts(chain, header, state); err != nil {
 			log.Error("Initialize system contracts failed", "err", err)
 			// return err
@@ -645,6 +645,9 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 			log.Info("Initialize system contracts successful")
 		}
 	}
+
+	// committeeExecute()
+	// supplyControlExecute()
 
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
@@ -681,6 +684,37 @@ func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, he
 
 	return nil
 }
+
+func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+	// TODO @system_contract
+	// getProposalByBlockNumber(header.Number)
+	// if (data != nil ) {
+		// switch i {
+		// case 0:
+		//	   ISSUE @system_contract research solution to preventing user moving fund before burn
+		//     state.SubBalance(data.recipient,data.amount)
+		// case 1:
+		//     state.AddBalance(data.recipient,data.amount)
+		// default:
+		//     log.Warn()
+		// }
+	// } else {
+	//	log.Warn()
+	// }
+	return nil
+}
+
+func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+	// TODO @system_contract
+	// getProposalByBlockNumber(header.Number)
+	// if (data != nil ) {
+	//	execute()
+	// } else {
+	//	log.Warn()
+	// }
+	return nil
+}
+
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
 // nor block rewards given, and returns the final block.
