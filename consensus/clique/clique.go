@@ -661,7 +661,6 @@ func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, he
 			return err
 		}
 
-		// msg := types.NewMessage(common.FromHex("0x0000000000000000000000000000000000000000"), &contract.addr, nonce, new(big.Int), math.MaxUint64, new(big.Int), new(big.Int), new(big.Int), data, nil, true)
 		msg := &core.Message{
 			From:              systemCallerAddress,
 			To:                &contract.address,
