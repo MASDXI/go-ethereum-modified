@@ -71,16 +71,25 @@ var (
 
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
-	
-	rewardEpoch = uint64(50)
+
 )
 
 // System contract addresses.
 var (
 	committeeContractName = "committe"
+	supplyControlContractName = "supplycontrol"
 
-	committeeAddress = common.HexToAddress("0x0000000000000000000000000000000000001338")
+	committeeAddress = common.HexToAddress("0x0000000000000000000000000000000000001338") 	  // Default commitee contract address
+	supplyControlAddress = common.HexToAddress("0x0000000000000000000000000000000000001338")  // Default supply control contract address
 
+	zeroAddress = []common.Address{common.HexToAddress("0x0000000000000000000000000000000000000000")}
+	systemCallerAddress = common.HexToAddress("0x00000000000000000000000000000000000000F69")
+
+	enableSystemContract = false
+	initializedCommitee = zeroAddress
+	initializedAdmin = zeroAddress[0]
+	committeeContractAddress = supplyControlAddress
+	supplyControlContractAddress = committeeAddress
 )
 
 type MINT struct {
@@ -217,9 +226,13 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 	if conf.Epoch == 0 {
 		conf.Epoch = epochLength
 	}
-	if conf.RewardEpoch == 0 {
-		conf.RewardEpoch = rewardEpoch
+	if (conf.SystemContract.Enable == true) {
+		initializedCommitee = conf.SystemContract.InitializedCommitee
+		initializedAdmin = conf.SystemContract.InitializedAdmin
+		committeeContractAddress = conf.SystemContract.CommitteeContractAddress
+		supplyControlContractAddress = conf.SystemContract.SupplyControlContractAddress
 	}
+
 	// Allocate the snapshot caches and create the engine
 	recents := lru.NewCache[common.Hash, *Snapshot](inmemorySnapshots)
 	signatures := lru.NewCache[common.Hash, common.Address](inmemorySignatures)
@@ -624,10 +637,12 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		}
 	}
 
-	if header.Number.Cmp(common.Big1) == 0 {
+	if enableSystemContract {
 		if err := c.initializeSystemContracts(chain, header, state); err != nil {
 			log.Error("Initialize system contracts failed", "err", err)
 			// return err
+		} else {
+			log.Info("Initialize system contracts successful")
 		}
 	}
 
@@ -637,13 +652,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 }
 
 func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	snap, err := c.snapshot(chain, 0, header.ParentHash, nil)
-	if err != nil {
-		return err
-	}
-
-	genesisValidators := snap.signers()
-	for _, contract := range getSystemContracts(c.abi, genesisValidators, common.HexToAddress("0x9784e7348e2A4EbDC059e0BCC575D874d96ce88c")) {
+	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, big.NewInt(0), big.NewInt(240)) {
 
 		state.SetCode(contract.address, contract.deployedBytecode)
 
@@ -652,10 +661,9 @@ func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, he
 			return err
 		}
 
-		systemAddress := common.HexToAddress("0x0000000000000000000000000000000000000000")
 		// msg := types.NewMessage(common.FromHex("0x0000000000000000000000000000000000000000"), &contract.addr, nonce, new(big.Int), math.MaxUint64, new(big.Int), new(big.Int), new(big.Int), data, nil, true)
 		msg := &core.Message{
-			From:              systemAddress,
+			From:              systemCallerAddress,
 			To:                &contract.address,
 			Value:             big.NewInt(0),
 			GasLimit:          math.MaxUint64,

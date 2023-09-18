@@ -314,11 +314,19 @@ func (c *EthashConfig) String() string {
 	return "ethash"
 }
 
+type SystemContractConfig struct {
+	Enable bool `json:"enable"`
+	InitializedCommitee []common.Address `json:"initcommittee"`
+	InitializedAdmin common.Address `json:"initadmin"`
+	CommitteeContractAddress common.Address `json:"committeecontractaddress"`
+	SupplyControlContractAddress common.Address `json:"supplycontrolcontractaddress"`
+}
+
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
 type CliqueConfig struct {
 	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
 	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
-	RewardEpoch uint64 `json:"rewardepoch"`  // Epoch length to reset votes and checkpoint
+	SystemContract SystemContractConfig `json:"systemcontract"`  // System contract
 }
 
 // String implements the stringer interface, returning the consensus engine details.
