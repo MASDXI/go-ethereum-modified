@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -30,7 +29,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	lru "github.com/ethereum/go-ethereum/common/lru"
@@ -616,7 +614,6 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 	if header.Number.Cmp(common.Big1) == 0 && enableSystemContract   {
 		if err := c.initializeSystemContracts(chain, header, state); err != nil {
 			log.Error("Initialize system contracts failed", "err", err)
-			// return err
 		} else {
 			log.Info(`
 			███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗ ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  █████╗  ██████╗████████╗     █████╗  ██████╗████████╗██╗██╗   ██╗ █████╗ ████████╗███████╗
@@ -632,45 +629,24 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 
 	c.committeeExecute(chain, header, state)
 	c.supplyControlExecute(chain, header, state)
-
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = types.CalcUncleHash(nil)
 }
 
 func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, big.NewInt(0), big.NewInt(240)) {
-
+	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, big.NewInt(0), big.NewInt(0)) {
 		state.SetCode(contract.address, contract.deployedBytecode)
-
 		data, err := contract.packFun()
 		if err != nil {
 			return err
 		}
-
-		msg := &core.Message{
-			From:              systemCallerAddress,
-			To:                &contract.address,
-			Value:             big.NewInt(0),
-			GasLimit:          math.MaxUint64,
-			GasPrice:          big.NewInt(0),
-			GasFeeCap:         big.NewInt(0),
-			GasTipCap:         big.NewInt(0),
-			Data:              data,
-			AccessList:        nil,
-			SkipAccountChecks: true,
-		}
+		msg := MessageType(systemCallerAddress, &contract.address, data)
 		if ret, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config()); err != nil {
 			panic(string(ret))
 		}
-		
 	}
-
 	return nil
-}
-
-funct (c *Clique) systemExecutor(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-
 }
 
 func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
@@ -678,41 +654,27 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 	if parent == nil {
 		log.Error("Can't get parent from header", "error", parent)
 	}
-
 	contractName := supplyControlContractName
 	contractAddr := c.contractAddrs[contractName]
 	// method
 	method := "getProposalSupplyInfoByBlockNumber"
-	data, err := c.abi[contractName].Pack(method, header.Number)
-	if err != nil {
-		log.Error("Can't pack data for read", "error", err)
-	}
-
-	msg := &core.Message{
-		From:              systemCallerAddress,
-		To:                &contractAddr,
-		Value:             big.NewInt(0),
-		GasLimit:          math.MaxUint64,
-		GasPrice:          big.NewInt(0),
-		GasFeeCap:         big.NewInt(0),
-		GasTipCap:         big.NewInt(0),
-		Data:              data,
-		AccessList:        nil,
-		SkipAccountChecks: true,
-	}
-	result, err := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
-	if err != nil {
-		// should ignore error
-		log.Error("Can't getProposalSupplyInfoByBlockNumber", "error", err)
-	}
-	log.Info("execute result","result",result)
-
-	// TODO @system_contract
-	// if (data != nil ) {
-		// c.execute()
-		// switch i {
+	// encode
+	packData, _ := c.abi[contractName].Pack(method, header.Number)
+	msg := MessageType(systemCallerAddress, &contractAddr, packData)
+	result, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	// decode
+	unpackData, _ := c.abi[contractName].Unpack(method, result)
+	log.Info("execute result","result", unpackData)
+	// TODO @system_contract execute with condition check
+	if (unpackData != nil ) {
+		method := "execute"
+		executeData, _ := c.abi[contractName].Pack(method, parent.Number)
+		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
+		ret, _ :=executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+		log.Info("Proposal Execute result","result",ret) // for debuging only
+		// switch data.proposalType {
 		// case 0:
-		//	   ISSUE @system_contract research solution to preventing user moving fund before burn
+		// 	   ISSUE @system_contract research solution to preventing user moving fund before burn
 		//     state.SubBalance(data.recipient,data.amount)
 		// case 1:
 		//     state.AddBalance(data.recipient,data.amount)
@@ -721,44 +683,35 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 		// }
 	// } else {
 	//	log.Warn()
-	// }
+	}
 	return nil
 }
 
 func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	if parent == nil {
+		log.Error("Can't get parent from header", "error", parent)
+	}
 	contractName := committeeContractName
 	contractAddr := c.contractAddrs[contractName]
 	// method
 	method := "getProposalCommitteeInfoByBlockNumber"
-	data, err := c.abi[contractName].Pack(method, header.Number)
-	if err != nil {
-		log.Error("Can't pack data for read", "error", err)
+	// encode
+	packData, _ := c.abi[contractName].Pack(method, header.Number)
+	msg := MessageType(systemCallerAddress, &contractAddr, packData)
+	result, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	// decode
+	unpackData, _ := c.abi[contractName].Unpack(method, result)
+	// TODO @system_contract execute with condition check
+	if (unpackData != nil ) {
+		method := "execute"
+		executeData, _ := c.abi[contractName].Pack(method, parent.Number)
+		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
+		ret, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+		log.Info("Proposal Execute result","result",ret) // for debuging only
+	} else {
+		log.Warn("")
 	}
-
-	msg := &core.Message{
-		From:              systemCallerAddress,
-		To:                &contractAddr,
-		Value:             big.NewInt(0),
-		GasLimit:          math.MaxUint64,
-		GasPrice:          big.NewInt(0),
-		GasFeeCap:         big.NewInt(0),
-		GasTipCap:         big.NewInt(0),
-		Data:              data,
-		AccessList:        nil,
-		SkipAccountChecks: true,
-	}
-	result, err := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
-	if err != nil {
-		// should ignore error
-		log.Error("Can't getProposalCommitteeInfoByBlockNumber", "error", err)
-	}
-	log.Info("execute result","result",result)
-	// TODO @system_contract
-	// if (data != nil ) {
-	//	c.execute()
-	// } else {
-	//	log.Warn()
-	// }
 	return nil
 }
 
