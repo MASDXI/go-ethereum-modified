@@ -227,6 +227,7 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 		conf.Epoch = epochLength
 	}
 	if (conf.SystemContract.Enable == true) {
+		enableSystemContract = conf.SystemContract.Enable
 		initializedCommitee = conf.SystemContract.InitializedCommitee
 		initializedAdmin = conf.SystemContract.InitializedAdmin
 		committeeContractAddress = conf.SystemContract.CommitteeContractAddress
@@ -642,7 +643,15 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 			log.Error("Initialize system contracts failed", "err", err)
 			// return err
 		} else {
-			log.Info("Initialize system contracts successful")
+			log.Info(`
+			███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗ ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  █████╗  ██████╗████████╗     █████╗  ██████╗████████╗██╗██╗   ██╗ █████╗ ████████╗███████╗
+			██╔════╝╚██╗ ██╔╝██╔════╝╚══██╔══╝██╔════╝████╗ ████║██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝    ██╔══██╗██╔════╝╚══██╔══╝██║██║   ██║██╔══██╗╚══██╔══╝██╔════╝
+			███████╗ ╚████╔╝ ███████╗   ██║   █████╗  ██╔████╔██║██║     ██║   ██║██╔██╗ ██║   ██║   ██████╔╝███████║██║        ██║       ███████║██║        ██║   ██║██║   ██║███████║   ██║   █████╗  
+			╚════██║  ╚██╔╝  ╚════██║   ██║   ██╔══╝  ██║╚██╔╝██║██║     ██║   ██║██║╚██╗██║   ██║   ██╔══██╗██╔══██║██║        ██║       ██╔══██║██║        ██║   ██║╚██╗ ██╔╝██╔══██║   ██║   ██╔══╝  
+			███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║╚██████╗╚██████╔╝██║ ╚████║   ██║   ██║  ██║██║  ██║╚██████╗   ██║       ██║  ██║╚██████╗   ██║   ██║ ╚████╔╝ ██║  ██║   ██║   ███████╗
+			╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝       ╚═╝  ╚═╝ ╚═════╝   ╚═╝   ╚═╝  ╚═══╝  ╚═╝  ╚═╝   ╚═╝   ╚══════╝
+																																																		
+			`)                                                                                                                                                                                 
 		}
 	}
 
