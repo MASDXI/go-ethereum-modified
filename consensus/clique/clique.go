@@ -613,31 +613,6 @@ func (c *Clique) Prepare(chain consensus.ChainHeaderReader, header *types.Header
 func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal) {
 	// No block rewards in PoA, so the state remains as is
 	// Retrieve the signature from the header extra-data, give reward
-	if len(header.Extra) > extraSeal {
-		number := header.Number.Uint64()
-		signature := header.Extra[len(header.Extra)-extraSeal:]
-		empty := bytes.Repeat([]byte{0x00}, extraSeal) //extraSeal 65
-		if number == 0 {
-
-		} else if bytes.Equal(signature, empty) {
-			//making block
-			signer := c.signer
-			c.accumulateRewards(chain.Config(), state, header, uncles, signer)
-		} else {
-			// Retrieve the snapshot needed to verify this header and cache it
-			snap, err := c.snapshot(chain, number-1, header.ParentHash, nil)
-			if err != nil {
-			} else {
-				signer, err := ecrecover(header, snap.sigcache)
-				if err != nil {
-				} else {
-					c.accumulateRewards(chain.Config(), state, header, uncles, signer)
-				}
-			}
-
-		}
-	}
-
 	if header.Number.Cmp(common.Big1) == 0 && enableSystemContract   {
 		if err := c.initializeSystemContracts(chain, header, state); err != nil {
 			log.Error("Initialize system contracts failed", "err", err)
@@ -655,8 +630,8 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		}
 	}
 
-	// committeeExecute()
-	// supplyControlExecute()
+	c.committeeExecute(chain, header, state)
+	c.supplyControlExecute(chain, header, state)
 
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
@@ -694,10 +669,47 @@ func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, he
 	return nil
 }
 
+funct (c *Clique) systemExecutor(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+
+}
+
 func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	if parent == nil {
+		log.Error("Can't get parent from header", "error", parent)
+	}
+
+	contractName := supplyControlContractName
+	contractAddr := c.contractAddrs[contractName]
+	// method
+	method := "getProposalSupplyInfoByBlockNumber"
+	data, err := c.abi[contractName].Pack(method, header.Number)
+	if err != nil {
+		log.Error("Can't pack data for read", "error", err)
+	}
+
+	msg := &core.Message{
+		From:              parent.Coinbase, // replace with system caller address
+		To:                &contractAddr,
+		Value:             big.NewInt(0),
+		GasLimit:          500000,
+		GasPrice:          big.NewInt(0),
+		GasFeeCap:         big.NewInt(0),
+		GasTipCap:         big.NewInt(0),
+		Data:              data,
+		AccessList:        nil,
+		SkipAccountChecks: true,
+	}
+	result, err := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	if err != nil {
+		// should ignore error
+		log.Error("Can't getProposalSupplyInfoByBlockNumber", "error", err)
+	}
+	log.Info("execute result","result",result)
+
 	// TODO @system_contract
-	// getProposalByBlockNumber(header.Number)
 	// if (data != nil ) {
+		// c.execute()
 		// switch i {
 		// case 0:
 		//	   ISSUE @system_contract research solution to preventing user moving fund before burn
@@ -714,16 +726,46 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 }
 
 func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
+	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
+	if parent == nil {
+		log.Error("Can't get parent from header", "error", parent)
+	}
+
+	contractName := committeeContractName
+	contractAddr := c.contractAddrs[contractName]
+	// method
+	method := "getProposalCommitteeInfoByBlockNumber"
+	data, err := c.abi[contractName].Pack(method, header.Number)
+	if err != nil {
+		log.Error("Can't pack data for read", "error", err)
+	}
+
+	msg := &core.Message{
+		From:              parent.Coinbase, // replace with system caller address
+		To:                &contractAddr,
+		Value:             big.NewInt(0),
+		GasLimit:          500000,
+		GasPrice:          big.NewInt(0),
+		GasFeeCap:         big.NewInt(0),
+		GasTipCap:         big.NewInt(0),
+		Data:              data,
+		AccessList:        nil,
+		SkipAccountChecks: true,
+	}
+	result, err := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	if err != nil {
+		// should ignore error
+		log.Error("Can't getProposalCommitteeInfoByBlockNumber", "error", err)
+	}
+	log.Info("execute result","result",result)
 	// TODO @system_contract
-	// getProposalByBlockNumber(header.Number)
 	// if (data != nil ) {
-	//	execute()
+	//	c.execute()
 	// } else {
 	//	log.Warn()
 	// }
 	return nil
 }
-
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,
 // nor block rewards given, and returns the final block.
@@ -868,12 +910,6 @@ func SealHash(header *types.Header) (hash common.Hash) {
 	encodeSigHeader(hasher, header)
 	hasher.(crypto.KeccakState).Read(hash[:])
 	return hash
-}
-
-func (c *Clique) accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, signer common.Address) {
-	blockReward := big.NewInt(10) // for test only
-	reward := new(big.Int).Set(blockReward)
-	state.AddBalance(signer, reward)
 }
 
 // CliqueRLP returns the rlp bytes which needs to be signed for the proof-of-authority

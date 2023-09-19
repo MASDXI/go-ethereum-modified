@@ -64,7 +64,7 @@ func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, c
 	state.Finalise(true)
 	ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
 	if err != nil {
-		log.Error("ExecuteMsg failed", "err", err, "return", string(ret))
+		log.Error("ExecuteMsg failed", "erorr", err, "return", string(ret))
 		return ret, err
 	}
 
