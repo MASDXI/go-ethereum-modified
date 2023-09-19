@@ -61,10 +61,10 @@ func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, c
 	context := core.NewEVMBlockContext(header, chainContext, nil)
 	txContext := core.NewEVMTxContext(msg)
 	vmenv := vm.NewEVM(context, txContext, state, chainConfig, vm.Config{})
-	
+	ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
 	// msg.GasPrice
 	state.Finalise(true)
-	ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
+	// ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
 	if err != nil {
 		log.Error("ExecuteMsg failed", "erorr", err, "return", string(ret))
 		return ret, err

@@ -650,10 +650,6 @@ func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, he
 }
 
 func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
-	if parent == nil {
-		log.Error("Can't get parent from header", "error", parent)
-	}
 	contractName := supplyControlContractName
 	contractAddr := c.contractAddrs[contractName]
 	// method
@@ -661,16 +657,16 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 	// encode
 	packData, _ := c.abi[contractName].Pack(method, header.Number)
 	msg := MessageType(systemCallerAddress, &contractAddr, packData)
-	result, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	result, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
 	// decode
 	unpackData, _ := c.abi[contractName].Unpack(method, result)
 	log.Info("execute result","result", unpackData)
 	// TODO @system_contract execute with condition check
 	if (unpackData != nil ) {
 		method := "execute"
-		executeData, _ := c.abi[contractName].Pack(method, parent.Number)
+		executeData, _ := c.abi[contractName].Pack(method, header.Number)
 		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
-		ret, _ :=executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+		ret, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
 		log.Info("Proposal Execute result","result",ret) // for debuging only
 		// switch data.proposalType {
 		// case 0:
@@ -695,23 +691,25 @@ func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *typ
 	contractName := committeeContractName
 	contractAddr := c.contractAddrs[contractName]
 	// method
-	method := "getProposalCommitteeInfoByBlockNumber"
+	method := "votingPeriod"
 	// encode
-	packData, _ := c.abi[contractName].Pack(method, header.Number)
+	packData, _ := c.abi[contractName].Pack(method)
 	msg := MessageType(systemCallerAddress, &contractAddr, packData)
 	result, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	log.Info("Proposal Execute result","result",result) 
 	// decode
 	unpackData, _ := c.abi[contractName].Unpack(method, result)
+	log.Info("Proposal Execute result","result",unpackData) 
 	// TODO @system_contract execute with condition check
-	if (unpackData != nil ) {
-		method := "execute"
-		executeData, _ := c.abi[contractName].Pack(method, parent.Number)
-		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
-		ret, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
-		log.Info("Proposal Execute result","result",ret) // for debuging only
-	} else {
-		log.Warn("")
-	}
+	// if (unpackData != nil ) {
+	// 	method := "execute"
+	// 	executeData, _ := c.abi[contractName].Pack(method, parent.Number)
+	// 	msg := MessageType(systemCallerAddress, &contractAddr, executeData)
+	// 	ret, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
+	// 	log.Info("Proposal Execute result","result",ret) // for debuging only
+	// } else {
+	// 	log.Warn("")
+	// }
 	return nil
 }
 
