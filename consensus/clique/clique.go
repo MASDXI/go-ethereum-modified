@@ -689,10 +689,10 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 	}
 
 	msg := &core.Message{
-		From:              parent.Coinbase, // replace with system caller address
+		From:              systemCallerAddress,
 		To:                &contractAddr,
 		Value:             big.NewInt(0),
-		GasLimit:          500000,
+		GasLimit:          math.MaxUint64,
 		GasPrice:          big.NewInt(0),
 		GasFeeCap:         big.NewInt(0),
 		GasTipCap:         big.NewInt(0),
@@ -726,11 +726,6 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 }
 
 func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
-	if parent == nil {
-		log.Error("Can't get parent from header", "error", parent)
-	}
-
 	contractName := committeeContractName
 	contractAddr := c.contractAddrs[contractName]
 	// method
@@ -741,10 +736,10 @@ func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *typ
 	}
 
 	msg := &core.Message{
-		From:              parent.Coinbase, // replace with system caller address
+		From:              systemCallerAddress,
 		To:                &contractAddr,
 		Value:             big.NewInt(0),
-		GasLimit:          500000,
+		GasLimit:          math.MaxUint64,
 		GasPrice:          big.NewInt(0),
 		GasFeeCap:         big.NewInt(0),
 		GasTipCap:         big.NewInt(0),
@@ -911,6 +906,7 @@ func SealHash(header *types.Header) (hash common.Hash) {
 	hasher.(crypto.KeccakState).Read(hash[:])
 	return hash
 }
+
 
 // CliqueRLP returns the rlp bytes which needs to be signed for the proof-of-authority
 // sealing. The RLP to sign consists of the entire header apart from the 65 byte signature

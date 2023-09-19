@@ -70,3 +70,20 @@ func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, c
 
 	return ret, nil
 }
+
+// TODO @system contract functional function for create msg
+// func MessageType(caller common.Address, dst common.Address, commi, data ) (*core.Message, error) {
+// 	msg := &core.Message{
+// 		From:              caller,
+// 		To:                dst,
+// 		Value:             big.NewInt(0),
+// 		GasLimit:          math.MaxUint64,
+// 		GasPrice:          big.NewInt(0),
+// 		GasFeeCap:         big.NewInt(0),
+// 		GasTipCap:         big.NewInt(0),
+// 		Data:              data,
+// 		AccessList:        nil,
+// 		SkipAccountChecks: true,
+// 	}
+// 	return msg, nil
+// }
