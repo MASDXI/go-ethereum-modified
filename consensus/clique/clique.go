@@ -77,8 +77,8 @@ var (
 	committeeContractName = "committe"
 	supplyControlContractName = "supplycontrol"
 
-	committeeAddress = common.HexToAddress("0x0000000000000000000000000000000000001338") 	  // Default commitee contract address
-	supplyControlAddress = common.HexToAddress("0x0000000000000000000000000000000000001338")  // Default supply control contract address
+	committeeAddress = common.HexToAddress("0x0000000000000000000000000000000000000069") 	  // Default commitee contract address
+	supplyControlAddress = common.HexToAddress("0x0000000000000000000000000000000000000070")  // Default supply control contract address
 
 	zeroAddress = []common.Address{common.HexToAddress("0x0000000000000000000000000000000000000000")}
 	systemCallerAddress = common.HexToAddress("0x00000000000000000000000000000000000000F69")
@@ -89,12 +89,6 @@ var (
 	committeeContractAddress = supplyControlAddress
 	supplyControlContractAddress = committeeAddress
 )
-
-type MINT struct {
-	address common.Address
-	amount *big.Int
-	blockNumber uint64
-}
 
 // Various error messages to mark blocks invalid. These should be private to
 // prevent engine specific errors from being referenced in the remainder of the
@@ -658,28 +652,36 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 	packData, _ := c.abi[contractName].Pack(method, header.Number)
 	msg := MessageType(systemCallerAddress, &contractAddr, packData)
 	result, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
-	// decode
-	unpackData, _ := c.abi[contractName].Unpack(method, result)
-	log.Info("execute result","result", unpackData)
-	// TODO @system_contract execute with condition check
-	if (unpackData != nil ) {
-		method := "execute"
-		executeData, _ := c.abi[contractName].Pack(method, header.Number)
-		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
-		ret, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
-		log.Info("Proposal Execute result","result",ret) // for debuging only
-		// switch data.proposalType {
-		// case 0:
-		// 	   ISSUE @system_contract research solution to preventing user moving fund before burn
-		//     state.SubBalance(data.recipient,data.amount)
-		// case 1:
-		//     state.AddBalance(data.recipient,data.amount)
-		// default:
-		//     log.Warn()
-		// }
-	// } else {
-	//	log.Warn()
+	type ProposalSupplyInfo struct {
+		Proposer     common.Address
+		Recipient    common.Address
+		Amount       *big.Int
+		BlockNumber  *big.Int
+		ProposeType  uint8
 	}
+	// decode
+	prop := &ProposalSupplyInfo{}
+	err := c.abi[contractName].UnpackIntoInterface(&prop, method, result)
+	log.Info("UnpackIntoInterface","return", prop)
+	// TODO @system_contract execute with condition check
+	// if (unpackData[0] != 0 ) {
+	// 	method := "execute"
+	// 	executeData, _ := c.abi[contractName].Pack(method, header.Number)
+	// 	msg := MessageType(systemCallerAddress, &contractAddr, executeData)
+	// 	ret, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
+	// 	log.Info("Proposal Execute result","result",ret[0].ProposeType) // for debuging only
+	// 	switch data.ProposeType {
+	// 	case 0:
+	// 		//ISSUE @system_contract research solution to preventing user moving fund before burn
+	// 	    state.SubBalance(data.Recipient,data.Amount)
+	// 	case 1:
+	// 	    state.AddBalance(data.Recipient,data.Amount)
+	// 	default:
+	// 	    log.Warn("")
+	// 	}
+	// } else {
+	// 	log.Warn("")
+	// }
 	return nil
 }
 
