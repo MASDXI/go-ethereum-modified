@@ -642,7 +642,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 }
 
 func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, big.NewInt(0), big.NewInt(0)) {
+	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, big.NewInt(0) /* voteDelay */, big.NewInt(0) /* votePeriod */) {
 		state.SetCode(contract.address, contract.deployedBytecode)
 		data, err := contract.packFun()
 		if err != nil {
