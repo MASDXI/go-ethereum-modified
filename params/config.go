@@ -320,6 +320,8 @@ type SystemContractConfig struct {
 	InitializedAdmin common.Address `json:"initadmin"`
 	CommitteeContractAddress common.Address `json:"committeecontractaddress"`
 	SupplyControlContractAddress common.Address `json:"supplycontrolcontractaddress"`
+	VoteDelay *big.Int `json:"votedelay"`
+	VotePeriod *big.Int `json:"voteperiod"`
 }
 
 // CliqueConfig is the consensus engine configs for proof-of-authority based sealing.

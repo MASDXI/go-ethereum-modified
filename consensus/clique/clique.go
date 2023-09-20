@@ -86,6 +86,8 @@ var (
 	enableSystemContract = false
 	initializedCommitee = zeroAddress
 	initializedAdmin = zeroAddress[0]
+	voteDelay = big.NewInt(0)
+	votePeriod = big.NewInt(int64(epochLength))
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -237,6 +239,8 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 		initializedAdmin = conf.SystemContract.InitializedAdmin
 		committeeAddress = conf.SystemContract.CommitteeContractAddress
 		supplyControlAddress = conf.SystemContract.SupplyControlContractAddress
+		voteDelay = conf.SystemContract.VoteDelay
+		votePeriod = conf.SystemContract.VotePeriod
 	}
 
 	// Allocate the snapshot caches and create the engine
@@ -642,7 +646,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 }
 
 func (c *Clique) initializeSystemContracts(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, big.NewInt(0) /* voteDelay */, big.NewInt(0) /* votePeriod */) {
+	for _, contract := range getSystemContracts(c.abi, initializedCommitee, initializedAdmin, voteDelay, votePeriod) {
 		state.SetCode(contract.address, contract.deployedBytecode)
 		data, err := contract.packFun()
 		if err != nil {
