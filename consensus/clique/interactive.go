@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 type chainContext struct {
@@ -64,13 +63,7 @@ func executeMsg(msg *core.Message, state *state.StateDB, header *types.Header, c
 	ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
 	// msg.GasPrice
 	state.Finalise(true)
-	// ret, _, err = vmenv.Call(vm.AccountRef(msg.From), *msg.To, msg.Data, msg.GasLimit, msg.Value)
-	if err != nil {
-		log.Error("ExecuteMsg failed", "erorr", err, "return", string(ret))
-		return ret, err
-	}
-
-	return ret, nil
+	return ret, err
 }
 
 func MessageType(caller common.Address, to *common.Address, data []byte) (*core.Message) {

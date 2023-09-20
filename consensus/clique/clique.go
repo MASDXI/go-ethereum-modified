@@ -86,8 +86,6 @@ var (
 	enableSystemContract = false
 	initializedCommitee = zeroAddress
 	initializedAdmin = zeroAddress[0]
-	committeeContractAddress = supplyControlAddress
-	supplyControlContractAddress = committeeAddress
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -210,6 +208,21 @@ type Clique struct {
 	fakeDiff bool // Skip difficulty verifications
 }
 
+type ProposalSupplyInfo struct {
+	Proposer     common.Address
+	Recipient    common.Address
+	Amount       *big.Int
+	BlockNumber  *big.Int
+	ProposeType  uint8
+}
+
+type ProposalCommitteeInfo struct{
+	Proposer common.Address
+	Commitee common.Address
+	BlockNumber *big.Int
+	ProposalType uint8
+}
+
 // New creates a Clique proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
 func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
@@ -222,8 +235,8 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 		enableSystemContract = conf.SystemContract.Enable
 		initializedCommitee = conf.SystemContract.InitializedCommitee
 		initializedAdmin = conf.SystemContract.InitializedAdmin
-		committeeContractAddress = conf.SystemContract.CommitteeContractAddress
-		supplyControlContractAddress = conf.SystemContract.SupplyControlContractAddress
+		committeeAddress = conf.SystemContract.CommitteeContractAddress
+		supplyControlAddress = conf.SystemContract.SupplyControlContractAddress
 	}
 
 	// Allocate the snapshot caches and create the engine
@@ -652,66 +665,56 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 	packData, _ := c.abi[contractName].Pack(method, header.Number)
 	msg := MessageType(systemCallerAddress, &contractAddr, packData)
 	result, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
-	type ProposalSupplyInfo struct {
-		Proposer     common.Address
-		Recipient    common.Address
-		Amount       *big.Int
-		BlockNumber  *big.Int
-		ProposeType  uint8
-	}
 	// decode
 	prop := &ProposalSupplyInfo{}
-	err := c.abi[contractName].UnpackIntoInterface(&prop, method, result)
+	c.abi[contractName].UnpackIntoInterface(&prop, method, result)
 	log.Info("UnpackIntoInterface","return", prop)
+	log.Info("SupplyControl","address", contractAddr)
 	// TODO @system_contract execute with condition check
-	// if (unpackData[0] != 0 ) {
-	// 	method := "execute"
-	// 	executeData, _ := c.abi[contractName].Pack(method, header.Number)
-	// 	msg := MessageType(systemCallerAddress, &contractAddr, executeData)
-	// 	ret, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
-	// 	log.Info("Proposal Execute result","result",ret[0].ProposeType) // for debuging only
-	// 	switch data.ProposeType {
-	// 	case 0:
-	// 		//ISSUE @system_contract research solution to preventing user moving fund before burn
-	// 	    state.SubBalance(data.Recipient,data.Amount)
-	// 	case 1:
-	// 	    state.AddBalance(data.Recipient,data.Amount)
-	// 	default:
-	// 	    log.Warn("")
-	// 	}
-	// } else {
-	// 	log.Warn("")
-	// }
+	if (prop.Amount != nil ) {
+		method := "execute"
+		executeData, _ := c.abi[contractName].Pack(method, header.Number)
+		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
+		if ret, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config()); err != nil {
+			panic(string(ret))
+		}
+		switch prop.ProposeType {
+		case 0:
+			//ISSUE @system_contract research solution to preventing user moving fund before burn
+		    state.SubBalance(prop.Recipient, prop.Amount)
+		case 1:
+		    state.AddBalance(prop.Recipient, prop.Amount)
+		default:
+		    log.Warn("Invalid supply control proposeType")
+		}
+	}
 	return nil
 }
 
 func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	parent := chain.GetHeader(header.ParentHash, header.Number.Uint64()-1)
-	if parent == nil {
-		log.Error("Can't get parent from header", "error", parent)
-	}
 	contractName := committeeContractName
 	contractAddr := c.contractAddrs[contractName]
 	// method
-	method := "votingPeriod"
+	method := "getProposalSupplyInfoByBlockNumber"
 	// encode
 	packData, _ := c.abi[contractName].Pack(method)
 	msg := MessageType(systemCallerAddress, &contractAddr, packData)
-	result, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
-	log.Info("Proposal Execute result","result",result) 
+	result, _ := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config())
 	// decode
-	unpackData, _ := c.abi[contractName].Unpack(method, result)
-	log.Info("Proposal Execute result","result",unpackData) 
-	// TODO @system_contract execute with condition check
-	// if (unpackData != nil ) {
-	// 	method := "execute"
-	// 	executeData, _ := c.abi[contractName].Pack(method, parent.Number)
-	// 	msg := MessageType(systemCallerAddress, &contractAddr, executeData)
-	// 	ret, _ := executeMsg(msg, state, parent, newChainContext(chain, c), chain.Config())
-	// 	log.Info("Proposal Execute result","result",ret) // for debuging only
-	// } else {
-	// 	log.Warn("")
-	// }
+	prop := &ProposalCommitteeInfo{}
+	c.abi[contractName].UnpackIntoInterface(&prop, method, result)
+	log.Info("Committee","address", contractAddr)
+	if (prop.BlockNumber != nil ) {
+		method := "execute"
+		executeData, _ := c.abi[contractName].Pack(method, header.Number)
+		msg := MessageType(systemCallerAddress, &contractAddr, executeData)
+		if ret, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config()); err != nil {
+			panic(string(ret))
+		}
+		// log.Info("Proposal Execute result","result", ret) // for debuging only
+	} else {
+		log.Warn("")
+	}
 	return nil
 }
 
