@@ -626,15 +626,7 @@ func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 		if err := c.initializeSystemContracts(chain, header, state); err != nil {
 			log.Error("Initialize system contracts failed", "err", err)
 		} else {
-			log.Info(`
-			███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗ ██████╗ ██████╗ ███╗   ██╗████████╗██████╗  █████╗  ██████╗████████╗     █████╗  ██████╗████████╗██╗██╗   ██╗ █████╗ ████████╗███████╗
-			██╔════╝╚██╗ ██╔╝██╔════╝╚══██╔══╝██╔════╝████╗ ████║██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝    ██╔══██╗██╔════╝╚══██╔══╝██║██║   ██║██╔══██╗╚══██╔══╝██╔════╝
-			███████╗ ╚████╔╝ ███████╗   ██║   █████╗  ██╔████╔██║██║     ██║   ██║██╔██╗ ██║   ██║   ██████╔╝███████║██║        ██║       ███████║██║        ██║   ██║██║   ██║███████║   ██║   █████╗  
-			╚════██║  ╚██╔╝  ╚════██║   ██║   ██╔══╝  ██║╚██╔╝██║██║     ██║   ██║██║╚██╗██║   ██║   ██╔══██╗██╔══██║██║        ██║       ██╔══██║██║        ██║   ██║╚██╗ ██╔╝██╔══██║   ██║   ██╔══╝  
-			███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║╚██████╗╚██████╔╝██║ ╚████║   ██║   ██║  ██║██║  ██║╚██████╗   ██║       ██║  ██║╚██████╗   ██║   ██║ ╚████╔╝ ██║  ██║   ██║   ███████╗
-			╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝       ╚═╝  ╚═╝ ╚═════╝   ╚═╝   ╚═╝  ╚═══╝  ╚═╝  ╚═╝   ╚═╝   ╚══════╝
-																																																		
-			`)                                                                                                                                                                                 
+			log.Info(`Intialize system contract successful.`)                                                                                                                                                                                 
 		}
 	}
 
@@ -672,8 +664,6 @@ func (c *Clique) supplyControlExecute(chain consensus.ChainHeaderReader, header 
 	// decode
 	prop := &ProposalSupplyInfo{}
 	c.abi[contractName].UnpackIntoInterface(&prop, method, result)
-	log.Info("UnpackIntoInterface","return", prop)
-	log.Info("SupplyControl","address", contractAddr)
 	// TODO @system_contract execute with condition check
 	if (prop.Amount != nil ) {
 		method := "execute"
@@ -707,7 +697,6 @@ func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *typ
 	// decode
 	prop := &ProposalCommitteeInfo{}
 	c.abi[contractName].UnpackIntoInterface(&prop, method, result)
-	log.Info("Committee","address", contractAddr)
 	if (prop.BlockNumber != nil ) {
 		method := "execute"
 		executeData, _ := c.abi[contractName].Pack(method, header.Number)
@@ -715,7 +704,6 @@ func (c *Clique) committeeExecute(chain consensus.ChainHeaderReader, header *typ
 		if ret, err := executeMsg(msg, state, header, newChainContext(chain, c), chain.Config()); err != nil {
 			panic(string(ret))
 		}
-		// log.Info("Proposal Execute result","result", ret) // for debuging only
 	} else {
 		log.Warn("")
 	}
