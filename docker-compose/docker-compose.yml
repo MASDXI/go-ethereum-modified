@@ -1,0 +1,84 @@
+version: '3.8'
+
+x-geth: &geth
+  image: loaffinity-evm:dev
+
+services:
+  geth-node1:
+    << : *geth
+    hostname: geth-validator-1
+    entrypoint: /usr/bin/docker-entrypoint.sh
+    volumes:
+      - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
+      - "./data/node1/geth:/geth-node/devnet/data"
+      - "./config:/geth-node/devnet/config"
+      - "./keystore/keyfile-node1.json:/geth-node/devnet/data/keystore/key.json"
+      - "./bootkey:/geth-node/bootnode/"
+    command:
+      - "--config=/geth-node/devnet/config/config-node.toml"
+      - "--nodekey=/geth-node/bootnode/boot.key"
+      - "--password=/geth-node/devnet/config/password.txt"
+      - "--mine"
+      - "--unlock=0x32d5a21376c0df3f98200a00380b06adee341b91"
+      - "--miner.etherbase=0x32d5a21376c0df3f98200a00380b06adee341b91"
+      - "--allow-insecure-unlock"
+    ports:
+      - 8546:8545
+      - 30304:30303
+    networks:
+      dev-net:
+        ipv4_address: 172.16.254.3
+  geth-node2:
+    << : *geth
+    hostname: geth-validator-2
+    entrypoint: /usr/bin/docker-entrypoint.sh
+    volumes:
+      - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
+      - "./data/node2/geth:/geth-node/devnet/data"
+      - "./config:/geth-node/devnet/config"
+      - "./keystore/keyfile-node2.json:/geth-node/devnet/data/keystore/key.json"
+    command:
+      - "--config=/geth-node/devnet/config/config-node.toml"
+      - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
+      - "--password=/geth-node/devnet/config/password.txt"
+      - "--gcmode=archive"
+      - "--mine"
+      - "--unlock=0x6f7090364d4ae2c1819693d6382b74c7d004b4b8"
+      - "--miner.etherbase=0x6f7090364d4ae2c1819693d6382b74c7d004b4b8"
+      - "--allow-insecure-unlock"
+    ports:
+      - 8547:8545
+      - 30305:30303
+    networks:
+      dev-net:
+        ipv4_address: 172.16.254.4
+  geth-node3:
+    << : *geth
+    hostname: geth-validator-3
+    entrypoint: /usr/bin/docker-entrypoint.sh
+    volumes:
+      - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
+      - "./data/node3/geth:/geth-node/devnet/data"
+      - "./config:/geth-node/devnet/config"
+      - "./keystore/keyfile-node3.json:/geth-node/devnet/data/keystore/key.json"
+    command:
+      - "--config=/geth-node/devnet/config/config-node.toml"
+      - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
+      - "--password=/geth-node/devnet/config/password.txt"
+      - "--mine"
+      - "--unlock=0x7c55259cc19af2ab5f417680884b5b642e20cdc4"
+      - "--miner.etherbase=0x7c55259cc19af2ab5f417680884b5b642e20cdc4"
+      - "--allow-insecure-unlock"
+    ports:
+      - 8548:8545
+      - 30306:30303
+    networks:
+      dev-net:
+        ipv4_address: 172.16.254.5
+
+networks:
+  dev-net:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.16.254.0/28
