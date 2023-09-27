@@ -10,9 +10,9 @@ services:
     entrypoint: /usr/bin/docker-entrypoint.sh
     volumes:
       - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
-      - "./data/node1/geth:/geth-node/devnet/data"
+      - "./data/node1/geth:/geth-node/devnet/data" # mount to host
       - "./config:/geth-node/devnet/config"
-      - "./keystore/keyfile-node1.json:/geth-node/devnet/data/keystore/key.json"
+      - "./keystore/keyfile-node1.json:/geth-node/devnet/data/keystore/key.json" # mount to host
       - "./bootkey:/geth-node/bootnode/"
     command:
       - "--allow-insecure-unlock"
@@ -32,9 +32,9 @@ services:
     entrypoint: /usr/bin/docker-entrypoint.sh
     volumes:
       - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
-      - "./data/node2/geth:/geth-node/devnet/data"
+      - "./data/node2/geth:/geth-node/devnet/data" # mount to host
       - "./config:/geth-node/devnet/config"
-      - "./keystore/keyfile-node2.json:/geth-node/devnet/data/keystore/key.json"
+      - "./keystore/keyfile-node2.json:/geth-node/devnet/data/keystore/key.json" # mount to host
     command:
       - "--allow-insecure-unlock"
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
@@ -54,9 +54,9 @@ services:
     entrypoint: /usr/bin/docker-entrypoint.sh
     volumes:
       - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
-      - "./data/node3/geth:/geth-node/devnet/data"
+      - "./data/node3/geth:/geth-node/devnet/data" # mount to host
       - "./config:/geth-node/devnet/config"
-      - "./keystore/keyfile-node3.json:/geth-node/devnet/data/keystore/key.json"
+      - "./keystore/keyfile-node3.json:/geth-node/devnet/data/keystore/key.json" # mount to host
     command:
       - "--allow-insecure-unlock"
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
@@ -74,8 +74,8 @@ services:
     entrypoint: /usr/bin/docker-entrypoint.sh
     volumes:
       - "./config/docker-entrypoint.sh:/usr/bin/docker-entrypoint.sh"
-      - "./data/rpc/geth:/geth-node/devnet/data"
-      - "./config:/geth-node/devnet/config"
+      - "./data/rpc/geth:/geth-node/devnet/data" # mount to host
+      - "./config:/geth-node/devnet/config
     command:
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
       - "--config=/geth-node/devnet/config/config.toml"
