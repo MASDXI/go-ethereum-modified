@@ -58,47 +58,51 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
 func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
-	var (
-		receipts    types.Receipts
-		usedGas     = new(uint64)
-		header      = block.Header()
-		blockHash   = block.Hash()
-		blockNumber = block.Number()
-		allLogs     []*types.Log
-		gp          = new(GasPool).AddGas(block.GasLimit())
-	)
-	// Mutate the block and state according to any hard-fork specs
-	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
-		misc.ApplyDAOHardFork(statedb)
-	}
-	var (
-		context = NewEVMBlockContext(header, p.bc, nil)
-		vmenv   = vm.NewEVM(context, vm.TxContext{}, statedb, p.config, cfg)
-		signer  = types.MakeSigner(p.config, header.Number, header.Time)
-	)
-	// Iterate over and process the individual transactions
-	for i, tx := range block.Transactions() {
-		msg, err := TransactionToMessage(tx, signer, header.BaseFee)
-		if err != nil {
-			return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
-		}
-		statedb.SetTxContext(tx.Hash(), i)
-		receipt, err := applyTransaction(msg, p.config, gp, statedb, blockNumber, blockHash, tx, usedGas, vmenv)
-		if err != nil {
-			return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
-		}
-		receipts = append(receipts, receipt)
-		allLogs = append(allLogs, receipt.Logs...)
-	}
-	// Fail if Shanghai not enabled and len(withdrawals) is non-zero.
-	withdrawals := block.Withdrawals()
-	if len(withdrawals) > 0 && !p.config.IsShanghai(block.Number(), block.Time()) {
-		return nil, nil, 0, errors.New("withdrawals before shanghai")
-	}
-	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), withdrawals)
+    var (
+        receipts    types.Receipts
+        usedGas     = new(uint64)
+        header      = block.Header()
+        blockHash   = block.Hash()
+        blockNumber = block.Number()
+        allLogs     []*types.Log
+        gp          = new(GasPool).AddGas(block.GasLimit())
+    )
+    // Mutate the block and state according to any hard-fork specs
+    if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
+        misc.ApplyDAOHardFork(statedb)
+    }
+    var (
+        context = NewEVMBlockContext(header, p.bc, nil)
+        vmenv   = vm.NewEVM(context, vm.TxContext{}, statedb, p.config, cfg)
+        signer  = types.MakeSigner(p.config, header.Number, header.Time)
+    )
+    // @TODO filterTx
+    // Filter transactions based on your specification
+    filteredTransactions := p.FilterTransactions(block.Transactions())
 
-	return receipts, allLogs, *usedGas, nil
+    // Iterate over and process the individual transactions
+    for i, tx := range filteredTransactions {
+        msg, err := TransactionToMessage(tx, signer, header.BaseFee)
+        if err != nil {
+            return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
+        }
+        statedb.SetTxContext(tx.Hash(), i)
+        receipt, err := applyTransaction(msg, p.config, gp, statedb, blockNumber, blockHash, tx, usedGas, vmenv)
+        if err != nil {
+            return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
+        }
+        receipts = append(receipts, receipt)
+        allLogs = append(allLogs, receipt.Logs...)
+    }
+    // Fail if Shanghai not enabled and len(withdrawals) is non-zero.
+    withdrawals := block.Withdrawals()
+    if len(withdrawals) > 0 && !p.config.IsShanghai(block.Number(), block.Time()) {
+        return nil, nil, 0, errors.New("withdrawals before shanghai")
+    }
+    // Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
+    p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), withdrawals)
+    
+    return receipts, allLogs, *usedGas, nil
 }
 
 func applyTransaction(msg *Message, config *params.ChainConfig, gp *GasPool, statedb *state.StateDB, blockNumber *big.Int, blockHash common.Hash, tx *types.Transaction, usedGas *uint64, evm *vm.EVM) (*types.Receipt, error) {
@@ -161,8 +165,36 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	return applyTransaction(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
 }
 
-// TODO @FilteringTransaction
-// return non conflict transaction
+// @TODO filterTx
+// FilterTransactions filters transactions based on your specification
+func (p *StateProcessor) FilterTransactions(transactions types.Transactions) types.Transactions {
+    filteredTransactions := make(types.Transactions, 0, len(transactions))
 
-// TODO @ApplyNonConflictTransaction
-// applyTransaction in parallel way
+    for _, tx := range transactions {
+        // Implement your transaction filtering logic based on your specification here
+        // For example, you can check the type of transaction and decide whether to include it
+        // in the filteredTransactions based on your conflict criteria.
+        
+        // Sample code: Only include transactions that meet certain criteria.
+        if p.ShouldIncludeTransaction(tx) {
+            filteredTransactions = append(filteredTransactions, tx)
+        }
+    }
+
+    return filteredTransactions
+}
+
+// @TODO filterTx
+// ShouldIncludeTransaction implements your custom logic to decide whether to include a transaction or not
+func (p *StateProcessor) ShouldIncludeTransaction(tx *types.Transaction) bool {
+    // Implement your custom logic here based on your specification
+    // You can check the type of transaction and apply your filtering criteria.
+    // Return true if the transaction should be included, false otherwise.
+    // You can use the information in the transaction, such as 'to' and 'data', to make decisions.
+    // Example:
+    // if tx.To() == someContractAddress && someCondition {
+    //     return false // Exclude this transaction
+    // }
+    // return true // Include this transaction
+    return true // Include all transactions by default
+}
