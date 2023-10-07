@@ -187,14 +187,39 @@ func (p *StateProcessor) FilterTransactions(transactions types.Transactions) typ
 // @TODO filterTx
 // ShouldIncludeTransaction implements your custom logic to decide whether to include a transaction or not
 func (p *StateProcessor) ShouldIncludeTransaction(tx *types.Transaction) bool {
-    // Implement your custom logic here based on your specification
-    // You can check the type of transaction and apply your filtering criteria.
-    // Return true if the transaction should be included, false otherwise.
-    // You can use the information in the transaction, such as 'to' and 'data', to make decisions.
-    // Example:
-    // if tx.To() == someContractAddress && someCondition {
-    //     return false // Exclude this transaction
-    // }
-    // return true // Include this transaction
-    return true // Include all transactions by default
+    // Check the type of transaction based on your scenarios
+
+    // Transfer Scenario
+    if tx.To() != nil {
+        // Check if it's a transfer transaction
+        return true
+    }
+
+    // Transfer to Contract Scenario
+    if tx.To() == someContractAddress {
+        // Check if it's a transfer to a specific contract
+        // You can add more conditions here based on your scenario
+        return false // Exclude this transaction
+    }
+
+    // Calldata to Contract Scenario
+    if tx.To() != nil && someCondition {
+        // Check if it's a calldata transaction to a contract based on your condition
+        return true
+    }
+
+    // Create Contract Scenario
+    if tx.To() == nil {
+        // Check if it's a contract creation transaction
+        return false // Exclude this transaction
+    }
+
+    // Create Contract with Value Scenario
+    if tx.To() == nil && someCondition {
+        // Check if it's a contract creation transaction with value based on your condition
+        return true
+    }
+
+    // By default, include all other transactions
+    return true
 }
