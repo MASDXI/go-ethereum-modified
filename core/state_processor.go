@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/big"
     "bytes"
+    "sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -81,19 +82,47 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
     // Filter transactions based on your specification
     filteredTransactions := p.FilterTransactions(block.Transactions(),statedb)
 
-    // Iterate over and process the individual transactions
+    var wg sync.WaitGroup
+
+    // Create a channel to collect errors
+    tmp_errors := make(chan error, len(filteredTransactions))
+
+    // Create a mutex to safely append to slices
+    var mu sync.Mutex
+
+    // Iterate over and process the individual transactions concurrently
     for i, tx := range filteredTransactions {
-        msg, err := TransactionToMessage(tx, signer, header.BaseFee)
-        if err != nil {
-            return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
-        }
-        statedb.SetTxContext(tx.Hash(), i)
-        receipt, err := applyTransaction(msg, p.config, gp, statedb, blockNumber, blockHash, tx, usedGas, vmenv)
-        if err != nil {
-            return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
-        }
-        receipts = append(receipts, receipt)
-        allLogs = append(allLogs, receipt.Logs...)
+        wg.Add(1) // Increment the WaitGroup counter for each goroutine
+        go func(i int, tx *types.Transaction) {
+            defer wg.Done() // Decrement the WaitGroup counter when the goroutine finishes
+    
+            msg, err := TransactionToMessage(tx, signer, header.BaseFee)
+            if err != nil {
+                // Handle the error as needed
+                fmt.Printf("could not apply tx %d [%v]: %v\n", i, tx.Hash().Hex(), err)
+                return
+            }
+            statedb.SetTxContext(tx.Hash(), i)
+            receipt, err := applyTransaction(msg, p.config, gp, statedb, blockNumber, blockHash, tx, usedGas, vmenv)
+            if err != nil {
+                // Handle the error as needed
+                fmt.Printf("could not apply tx %d [%v]: %v\n", i, tx.Hash().Hex(), err)
+                return
+            }
+    
+            // Safely append to slices
+            mu.Lock()
+            receipts = append(receipts, receipt)
+            allLogs = append(allLogs, receipt.Logs...)
+            mu.Unlock()
+        }(i, tx)
+    }
+    // Wait for all goroutines to finish
+    wg.Wait()
+    close(tmp_errors) // Close the error channel
+    for err := range tmp_errors {
+        // Handle the errors if needed
+        fmt.Println(err)
     }
     // Fail if Shanghai not enabled and len(withdrawals) is non-zero.
     withdrawals := block.Withdrawals()
