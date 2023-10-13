@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+    "bytes"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -78,7 +79,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
     )
     // @TODO filterTx
     // Filter transactions based on your specification
-    filteredTransactions := p.FilterTransactions(block.Transactions())
+    filteredTransactions := p.FilterTransactions(block.Transactions(),statedb)
 
     // Iterate over and process the individual transactions
     for i, tx := range filteredTransactions {
@@ -167,59 +168,44 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 
 // @TODO filterTx
 // FilterTransactions filters transactions based on your specification
-func (p *StateProcessor) FilterTransactions(transactions types.Transactions) types.Transactions {
+func (p *StateProcessor) FilterTransactions(transactions types.Transactions, statedb *state.StateDB) types.Transactions {
     filteredTransactions := make(types.Transactions, 0, len(transactions))
-
     for _, tx := range transactions {
         // Implement your transaction filtering logic based on your specification here
         // For example, you can check the type of transaction and decide whether to include it
         // in the filteredTransactions based on your conflict criteria.
-        
         // Sample code: Only include transactions that meet certain criteria.
-        if p.ShouldIncludeTransaction(tx) {
+        if p.ShouldIncludeTransaction(tx, statedb) {
             filteredTransactions = append(filteredTransactions, tx)
         }
     }
-
     return filteredTransactions
 }
 
 // @TODO filterTx
 // ShouldIncludeTransaction implements your custom logic to decide whether to include a transaction or not
-func (p *StateProcessor) ShouldIncludeTransaction(tx *types.Transaction) bool {
+func (p *StateProcessor) ShouldIncludeTransaction(tx *types.Transaction, statedb *state.StateDB) bool {
     // Check the type of transaction based on your scenarios
-
     // Transfer Scenario
-    if tx.To() != nil {
+    if tx.To() != nil && len(tx.Data()) == 0 && tx.Value().Cmp(big.NewInt(0)) > 0 {
         // Check if it's a transfer transaction
         return true
     }
-
-    // Transfer to Contract Scenario
-    if tx.To() == someContractAddress {
-        // Check if it's a transfer to a specific contract
-        // You can add more conditions here based on your scenario
+    // Check if destination address is contract address
+    code := statedb.GetCode(*tx.To())
+    if (tx.To() != nil && code != nil) {
+        // Calldata to Contract Scenario with or without Value
+        if tx.To() != nil && !bytes.Equal(tx.Data(), []byte("0x")) {
+            // Check if it's a calldata transaction to a contract based on your condition
+            return false // Exclude this transaction
+        }
         return false // Exclude this transaction
     }
-
-    // Calldata to Contract Scenario
-    if tx.To() != nil && someCondition {
-        // Check if it's a calldata transaction to a contract based on your condition
-        return true
-    }
-
-    // Create Contract Scenario
-    if tx.To() == nil {
+    // Create Contract Scenario with or without Value
+    if (tx.To() == nil && tx.Data() != nil ) {
         // Check if it's a contract creation transaction
         return false // Exclude this transaction
     }
-
-    // Create Contract with Value Scenario
-    if tx.To() == nil && someCondition {
-        // Check if it's a contract creation transaction with value based on your condition
-        return true
-    }
-
-    // By default, include all other transactions
-    return true
+    // By default, exclude all other transactions not match with the case
+    return false
 }
