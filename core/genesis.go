@@ -198,6 +198,10 @@ func CommitGenesisState(db ethdb.Database, triedb *trie.Database, blockhash comm
 			genesis = DefaultGoerliGenesisBlock()
 		case params.SepoliaGenesisHash:
 			genesis = DefaultSepoliaGenesisBlock()
+		case param.AriGenesisHash:
+			genesis = DefaultAriGenesisBlock()
+		case param.SailomGenesisHash:
+			genesis = DefaultSailomGenesisBlock()
 		}
 		if genesis != nil {
 			alloc = genesis.Alloc
@@ -433,6 +437,10 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 		return params.SepoliaChainConfig
 	case ghash == params.GoerliGenesisHash:
 		return params.GoerliChainConfig
+	case ghash == params.AriGenesisHash:
+		return param.AriChainConfig
+	case ghash == params.SailomGeneisHash:
+		return param.SailomChainConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}
@@ -567,9 +575,33 @@ func DefaultSepoliaGenesisBlock() *Genesis {
 		Nonce:      0,
 		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
 		GasLimit:   0x1c9c380,
-		Difficulty: big.NewInt(0x20000),
+		Difficulty: big.NewInt(1),
 		Timestamp:  1633267481,
 		Alloc:      decodePrealloc(sepoliaAllocData),
+	}
+}
+
+func DefaultAriGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.AriChainConfig,
+		Nonce:      0,
+		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
+		GasLimit:   0x895440,
+		Difficulty: big.NewInt(1),
+		Timestamp:  1633267481, // @TODO
+		Alloc:      decodePrealloc(ariAllocData),
+	}
+}
+
+func DefaultSailomGenesisBlock() *Genesis {
+	return &Genesis{
+		Config:     params.SailomChainConfig,
+		Nonce:      0,
+		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
+		GasLimit:   0x895440,
+		Difficulty: big.NewInt(1),
+		Timestamp:  1633267481, // @TODO
+		Alloc:      decodePrealloc(sailomAllocData),
 	}
 }
 

@@ -155,6 +155,16 @@ var (
 		Usage:    "Sepolia network: pre-configured proof-of-work test network",
 		Category: flags.EthCategory,
 	}
+	AriFlag = &cli.BoolFlag{
+		Name:     "ari",
+		Usage:    "Ari mainnet",
+		Category: flags.EthCategory,
+	}
+	SailomFlag = &cli.BoolFlag{
+		Name:     "sailom",
+		Usage:    "Sailom network: pre-configured proof-of-authority test network",
+		Category: flags.EthCategory,
+	}
 
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
@@ -952,9 +962,10 @@ var (
 	TestnetFlags = []cli.Flag{
 		GoerliFlag,
 		SepoliaFlag,
+		SailomFlag,
 	}
 	// NetworkFlags is the flag group of all built-in supported networks.
-	NetworkFlags = append([]cli.Flag{MainnetFlag}, TestnetFlags...)
+	NetworkFlags = append([]cli.Flag{MainnetFlag, AriFlag}, TestnetFlags...)
 
 	// DatabasePathFlags is the flag group of all database path flags.
 	DatabasePathFlags = []cli.Flag{
@@ -981,6 +992,12 @@ func MakeDataDir(ctx *cli.Context) string {
 		}
 		if ctx.Bool(SepoliaFlag.Name) {
 			return filepath.Join(path, "sepolia")
+		}
+		if ctx.Bool(AriFlag.Name) {
+			return filepath.Join(path, "ari")
+		}
+		if ctx.Bool(SailomFlag.Name) {
+			return filepath.Join(path, "sailom")
 		}
 		return path
 	}
@@ -1032,6 +1049,11 @@ func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 		urls = params.SepoliaBootnodes
 	case ctx.Bool(GoerliFlag.Name):
 		urls = params.GoerliBootnodes
+	// @TODO
+	// case ctx.Bool(AriFlag.Name):
+	// 	urls = params.AriFlagBootnodes
+	// case ctx.Bool(SailomFlag.Name):
+	// 	urls = params.SailomFlagBootnodes
 	}
 
 	// don't apply defaults if BootstrapNodes is already set
@@ -1480,6 +1502,10 @@ func SetDataDir(ctx *cli.Context, cfg *node.Config) {
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "goerli")
 	case ctx.Bool(SepoliaFlag.Name) && cfg.DataDir == node.DefaultDataDir():
 		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "sepolia")
+	case ctx.Bool(AriFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "ari")
+	case ctx.Bool(SailomFlag.Name) && cfg.DataDir == node.DefaultDataDir():
+		cfg.DataDir = filepath.Join(node.DefaultDataDir(), "sailom")
 	}
 }
 
@@ -1636,7 +1662,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, GoerliFlag, SepoliaFlag)
+	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, GoerliFlag, SepoliaFlag, AriFlag, SailomFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 
@@ -1801,6 +1827,19 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultGoerliGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.GoerliGenesisHash)
+	// @TODO
+	// case ctx.Bool(AriFlag.Name):
+	// 	if !ctx.IsSet(NetworkIdFlag.Name) {
+	// 		cfg.NetworkId = 235
+	// 	}
+	// 	cfg.Genesis = core.DefaultAriGenesisBlock()
+	// 	SetDNSDiscoveryDefaults(cfg, params.AriGenesisHash)
+	// case ctx.Bool(SailomFlag.Name):
+	// 	if !ctx.IsSet(NetworkIdFlag.Name) {
+	// 		cfg.NetworkId = 508
+	// 	}
+	// 	cfg.Genesis = core.DefaultSailomGenesisBlock()
+	// 	SetDNSDiscoveryDefaults(cfg, params.SailomGenesisHash)
 	case ctx.Bool(DeveloperFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 1337
@@ -2125,6 +2164,10 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultSepoliaGenesisBlock()
 	case ctx.Bool(GoerliFlag.Name):
 		genesis = core.DefaultGoerliGenesisBlock()
+	case ctx.bool(AriFlag.Name):
+		genesis = core.DefaultAriGenesisBlock()
+	case ctx.bool(SailomFlag.Name):
+		genesis = core.DefaultSailomGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
 	}

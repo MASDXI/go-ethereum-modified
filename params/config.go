@@ -28,6 +28,8 @@ var (
 	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
 	SepoliaGenesisHash = common.HexToHash("0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9")
 	GoerliGenesisHash  = common.HexToHash("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")
+	AriGenesisHash = common.HexToHash("")
+	SailomGenesisHash = common.HexToHash("")
 )
 
 func newUint64(val uint64) *uint64 { return &val }
@@ -103,6 +105,86 @@ var (
 		Clique: &CliqueConfig{
 			Period: 15,
 			Epoch:  30000,
+		},
+	}
+	// AriChainConfig contains the chain parameters to run a node on the Ari mainnet.
+	AriChainConfig = &ChainConfig{
+		ChainID:                       big.NewInt(235),
+		HomesteadBlock:                big.NewInt(0),
+		DAOForkBlock:                  nil,
+		DAOForkSupport:                false,
+		EIP150Block:                   big.NewInt(0),
+		EIP155Block:                   big.NewInt(0),
+		EIP158Block:                   big.NewInt(0),
+		ByzantiumBlock:                big.NewInt(0),
+		ConstantinopleBlock:           big.NewInt(0),
+		PetersburgBlock:               big.NewInt(0),
+		IstanbulBlock:                 big.NewInt(0),
+		MuirGlacierBlock:              big.NewInt(0),
+		BerlinBlock:                   big.NewInt(0),
+		LondonBlock:                   big.NewInt(0),
+		ArrowGlacierBlock:             nil,
+		GrayGlacierBlock:              nil,
+		MergeNetsplitBlock:            nil,
+		ShanghaiTime:                  nil,
+		CancunTime:                    nil,
+		PragueTime:                    nil,
+		VerkleTime:                    nil,
+		TerminalTotalDifficulty:       nil,
+		TerminalTotalDifficultyPassed: false,
+		Ethash:                        nil,
+		Clique:                        &CliqueConfig{
+			Period: 15, 
+			Epoch: 3000,
+			SystemContract: &SystemContractConfig{
+				Enable: true,
+				InitializedCommitee: [], // @TODO
+				InitializedAdmin: common.Address(""),
+				CommitteeContractAddress: common.Address(""),
+				SupplyControlContractAddress: common.Address(""),
+				VoteDelay: big.NewInt(0),
+				VotePeriod: big.NewInt(240),
+			}
+		},
+	}
+	// SailomChainConfig contains the chain parameters to run a node on the Sailom test network.
+	SailomChainConfig = &ChainConfig{
+		ChainID:                       big.NewInt(508),
+		HomesteadBlock:                big.NewInt(0),
+		DAOForkBlock:                  nil,
+		DAOForkSupport:                false,
+		EIP150Block:                   big.NewInt(0),
+		EIP155Block:                   big.NewInt(0),
+		EIP158Block:                   big.NewInt(0),
+		ByzantiumBlock:                big.NewInt(0),
+		ConstantinopleBlock:           big.NewInt(0),
+		PetersburgBlock:               big.NewInt(0),
+		IstanbulBlock:                 big.NewInt(0),
+		MuirGlacierBlock:              big.NewInt(0),
+		BerlinBlock:                   big.NewInt(0),
+		LondonBlock:                   big.NewInt(0),
+		ArrowGlacierBlock:             nil,
+		GrayGlacierBlock:              nil,
+		MergeNetsplitBlock:            nil,
+		ShanghaiTime:                  nil,
+		CancunTime:                    nil,
+		PragueTime:                    nil,
+		VerkleTime:                    nil,
+		TerminalTotalDifficulty:       nil,
+		TerminalTotalDifficultyPassed: false,
+		Ethash:                        nil,
+		Clique:                        &CliqueConfig{
+			Period: 15, 
+			Epoch: 3000,
+			SystemContract: &SystemContractConfig{
+				Enable: true,
+				InitializedCommitee: [], // @TODO
+				InitializedAdmin: common.Address(""),
+				CommitteeContractAddress: common.Address(""),
+				SupplyControlContractAddress: common.Address(""),
+				VoteDelay: big.NewInt(0),
+				VotePeriod: big.NewInt(0),
+			}
 		},
 	}
 	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
@@ -253,6 +335,8 @@ var NetworkNames = map[string]string{
 	MainnetChainConfig.ChainID.String(): "mainnet",
 	GoerliChainConfig.ChainID.String():  "goerli",
 	SepoliaChainConfig.ChainID.String(): "sepolia",
+	AriChainConfig.ChainID.String(): "ari",
+	SailomChainConfig.ChainID.String(): "sailom",
 }
 
 // ChainConfig is the core config which determines the blockchain settings.
