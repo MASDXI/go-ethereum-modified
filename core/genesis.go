@@ -198,9 +198,9 @@ func CommitGenesisState(db ethdb.Database, triedb *trie.Database, blockhash comm
 			genesis = DefaultGoerliGenesisBlock()
 		case params.SepoliaGenesisHash:
 			genesis = DefaultSepoliaGenesisBlock()
-		case param.AriGenesisHash:
+		case params.AriGenesisHash:
 			genesis = DefaultAriGenesisBlock()
-		case param.SailomGenesisHash:
+		case params.SailomGenesisHash:
 			genesis = DefaultSailomGenesisBlock()
 		}
 		if genesis != nil {
@@ -438,9 +438,9 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case ghash == params.GoerliGenesisHash:
 		return params.GoerliChainConfig
 	case ghash == params.AriGenesisHash:
-		return param.AriChainConfig
-	case ghash == params.SailomGeneisHash:
-		return param.SailomChainConfig
+		return params.AriChainConfig
+	case ghash == params.SailomGenesisHash:
+		return params.SailomChainConfig
 	default:
 		return params.AllEthashProtocolChanges
 	}

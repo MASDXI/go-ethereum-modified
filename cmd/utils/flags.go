@@ -2162,9 +2162,9 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 		genesis = core.DefaultSepoliaGenesisBlock()
 	case ctx.Bool(GoerliFlag.Name):
 		genesis = core.DefaultGoerliGenesisBlock()
-	case ctx.bool(AriFlag.Name):
+	case ctx.Bool(AriFlag.Name):
 		genesis = core.DefaultAriGenesisBlock()
-	case ctx.bool(SailomFlag.Name):
+	case ctx.Bool(SailomFlag.Name):
 		genesis = core.DefaultSailomGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):
 		Fatalf("Developer chains are ephemeral")
