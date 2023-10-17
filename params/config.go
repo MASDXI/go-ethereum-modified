@@ -136,12 +136,12 @@ var (
 		Clique:                        &CliqueConfig{
 			Period: 15, 
 			Epoch: 3000,
-			SystemContract: &SystemContractConfig{
+			SystemContract: SystemContractConfig{
 				Enable: true,
-				InitializedCommitee: []common.Address{common.Address("")}, // @TODO
-				InitializedAdmin: common.Address(""),
-				CommitteeContractAddress: common.Address(""),
-				SupplyControlContractAddress: common.Address(""),
+				InitializedCommitee: []common.Address{common.HexToAddress("")}, // @TODO
+				InitializedAdmin: common.HexToAddress(""),
+				CommitteeContractAddress: common.HexToAddress(""),
+				SupplyControlContractAddress: common.HexToAddress(""),
 				VoteDelay: big.NewInt(0),
 				VotePeriod: big.NewInt(240),
 			},
@@ -176,12 +176,12 @@ var (
 		Clique:                        &CliqueConfig{
 			Period: 15, 
 			Epoch: 3000,
-			SystemContract: &SystemContractConfig{
+			SystemContract: SystemContractConfig{
 				Enable: true,
-				InitializedCommitee: []common.Address{common.Address("0x9784e7348e2A4EbDC059e0BCC575D874d96ce88c")},
-				InitializedAdmin: common.Address("0x9784e7348e2A4EbDC059e0BCC575D874d96ce88c"),
-				CommitteeContractAddress: common.Address("0x0000000000000000000000000000000000000068"),
-				SupplyControlContractAddress: common.Address("0x0000000000000000000000000000000000000069"),
+				InitializedCommitee: []common.Address{common.HexToAddress("0x9784e7348e2A4EbDC059e0BCC575D874d96ce88c")},
+				InitializedAdmin: common.HexToAddress("0x9784e7348e2A4EbDC059e0BCC575D874d96ce88c"),
+				CommitteeContractAddress: common.HexToAddress("0x0000000000000000000000000000000000000068"),
+				SupplyControlContractAddress: common.HexToAddress("0x0000000000000000000000000000000000000069"),
 				VoteDelay: big.NewInt(0),
 				VotePeriod: big.NewInt(0),
 			},
