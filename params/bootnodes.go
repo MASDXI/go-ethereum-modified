@@ -56,6 +56,18 @@ var GoerliBootnodes = []string{
 	"enode://d2b720352e8216c9efc470091aa91ddafc53e222b32780f505c817ceef69e01d5b0b0797b69db254c586f493872352f5a022b4d8479a00fc92ec55f9ad46a27e@88.99.70.182:30303",
 }
 
+// AriBootnodes are the enode URLs of the P2P bootstrap nodes running on the
+// Ari mainnet.
+var AriBootnodes = []string{
+	// @TODO
+}
+
+// SailomBootnodes are the enode URLs of the P2P bootstrap nodes running on the
+// Sailom test network.
+var SailomBootnodes = []string{
+	// @TODO
+}
+
 var V5Bootnodes = []string{
 	// Teku team's bootnode
 	"enr:-KG4QOtcP9X1FbIMOe17QNMKqDxCpm14jcX5tiOE4_TyMrFqbmhPZHK_ZPG2Gxb1GE2xdtodOfx9-cgvNtxnRyHEmC0ghGV0aDKQ9aX9QgAAAAD__________4JpZIJ2NIJpcIQDE8KdiXNlY3AyNTZrMaEDhpehBDbZjM_L9ek699Y7vhUJ-eAdMyQW_Fil522Y0fODdGNwgiMog3VkcIIjKA",
