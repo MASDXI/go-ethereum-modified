@@ -22,7 +22,7 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 
 # add new group and user avoid run as root user 
-RUN addgroup -S geth && adduser -S geth-user -G 
+RUN addgroup -S geth && adduser -S geth-user -G geth
 USER geth-user
 
 COPY --from=builder /go-ethereum/build/bin/* /usr/local/bin/
