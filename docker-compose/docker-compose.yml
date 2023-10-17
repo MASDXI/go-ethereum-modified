@@ -22,6 +22,7 @@ services:
       - "--nodekey=/.ethereum/bootnode/boot.key"
       - "--password=/.ethereum/config/password.txt"
       - "--unlock=0x32d5a21376c0df3f98200a00380b06adee341b91"
+      - "--keystore=/.ethereum/keystore/"
     networks:
       dev-net:
         ipv4_address: 172.16.254.3
@@ -43,6 +44,7 @@ services:
       - "--miner.etherbase=0x6f7090364d4ae2c1819693d6382b74c7d004b4b8"
       - "--password=/.ethereum/config/password.txt"
       - "--unlock=0x6f7090364d4ae2c1819693d6382b74c7d004b4b8"
+      - "--keystore=/.ethereum/keystore/"
     networks:
       dev-net:
         ipv4_address: 172.16.254.4
@@ -62,6 +64,7 @@ services:
       - "--miner.etherbase=0x7c55259cc19af2ab5f417680884b5b642e20cdc4"
       - "--password=/.ethereum/config/password.txt"
       - "--unlock=0x7c55259cc19af2ab5f417680884b5b642e20cdc4"
+      - "--keystore=/.ethereum/keystore/"
     networks:
       dev-net:
         ipv4_address: 172.16.254.5

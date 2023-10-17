@@ -585,7 +585,7 @@ func DefaultAriGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.AriChainConfig,
 		Nonce:      0,
-		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
+		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"), // @TODO
 		GasLimit:   0x895440,
 		Difficulty: big.NewInt(1),
 		Timestamp:  1633267481, // @TODO
@@ -597,7 +597,7 @@ func DefaultSailomGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:     params.SailomChainConfig,
 		Nonce:      0,
-		ExtraData:  []byte("Sepolia, Athens, Attica, Greece!"),
+		ExtraData:  hexutil.MustDecode("0x000000000000000000000000000000000000000000000000000000000000000032D5a21376C0dF3F98200a00380b06adeE341B916f7090364d4ae2c1819693d6382b74c7d004b4b87c55259cc19af2ab5f417680884b5b642e20cdc40000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		GasLimit:   0x895440,
 		Difficulty: big.NewInt(1),
 		Timestamp:  1633267481, // @TODO
