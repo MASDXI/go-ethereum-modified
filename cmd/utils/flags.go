@@ -1826,19 +1826,18 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultGoerliGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.GoerliGenesisHash)
-	// @TODO
-	// case ctx.Bool(AriFlag.Name):
-	// 	if !ctx.IsSet(NetworkIdFlag.Name) {
-	// 		cfg.NetworkId = 235
-	// 	}
-	// 	cfg.Genesis = core.DefaultAriGenesisBlock()
-	// 	SetDNSDiscoveryDefaults(cfg, params.AriGenesisHash)
-	// case ctx.Bool(SailomFlag.Name):
-	// 	if !ctx.IsSet(NetworkIdFlag.Name) {
-	// 		cfg.NetworkId = 508
-	// 	}
-	// 	cfg.Genesis = core.DefaultSailomGenesisBlock()
-	// 	SetDNSDiscoveryDefaults(cfg, params.SailomGenesisHash)
+	case ctx.Bool(AriFlag.Name):
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 235
+		}
+		cfg.Genesis = core.DefaultAriGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.AriGenesisHash)
+	case ctx.Bool(SailomFlag.Name):
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 508
+		}
+		cfg.Genesis = core.DefaultSailomGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.SailomGenesisHash)
 	case ctx.Bool(DeveloperFlag.Name):
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 1337
