@@ -20,6 +20,11 @@ RUN cd /go-ethereum && go run build/ci.go install -static
 FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates
+
+# add new group and user avoid run as root user 
+RUN addgroup -S geth && adduser -S geth-user -G 
+USER geth-user
+
 COPY --from=builder /go-ethereum/build/bin/* /usr/local/bin/
 
 EXPOSE 8545 8546 30303 30303/udp
