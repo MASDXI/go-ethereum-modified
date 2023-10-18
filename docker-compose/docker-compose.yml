@@ -8,21 +8,22 @@ services:
     << : *geth
     hostname: geth-validator-1
     volumes:
-      - "./data/node1/geth:/.ethereum/" # mount to host
-      - "./config:/.ethereum/config"
-      - "./keystore/keyfile-node1.json:/.ethereum/keystore/key.json" # mount to host
-      - "./bootkey:/.ethereum/bootnode/"
+      - "./data/node1/:/geth/geth" # mount to host
+      - "./config/config.toml:/geth/config.toml:ro"
+      - "./config/password.txt:/geth/password.txt:ro"
+      - "./keystore/keyfile-node1.json:/geth/key.json:ro" # mount to host
+      - "./bootkey/boot.key:/geth/boot.key:ro"
     command:
       - "--sailom"
       - "--allow-insecure-unlock"
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
-      - "--config=/.ethereum/config/config.toml"
+      - "--config=/geth/config.toml"
       - "--mine"
       - "--miner.etherbase=0x32d5a21376c0df3f98200a00380b06adee341b91"
-      - "--nodekey=/.ethereum/bootnode/boot.key"
-      - "--password=/.ethereum/config/password.txt"
+      - "--nodekey=/geth/boot.key"
+      - "--password=/geth/password.txt"
       - "--unlock=0x32d5a21376c0df3f98200a00380b06adee341b91"
-      - "--keystore=/.ethereum/keystore/"
+      - "--keystore=/geth/"
     networks:
       dev-net:
         ipv4_address: 172.16.254.3
@@ -30,21 +31,22 @@ services:
     << : *geth
     hostname: geth-validator-2
     volumes:
-      - "./data/node2/geth:/.ethereum/" # mount to host
-      - "./config:/.ethereum/config"
-      - "./keystore/keyfile-node2.json:/.ethereum/keystore/key.json" # mount to host
+      - "./data/node2/:/geth/geth" # mount to host
+      - "./config/config.toml:/geth/config.toml:ro"
+      - "./config/password.txt:/geth/password.txt:ro"
+      - "./keystore/keyfile-node2.json:/geth/key.json:ro" # mount to host
     command:
       - "--sailom"
       - "--allow-insecure-unlock"
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
-      - "--config=/.ethereum/config/config.toml"
+      - "--config=/geth/config.toml"
       - "--gcmode=archive"
-      - "--password=/.ethereum/config/password.txt"
+      - "--password=/geth/password.txt"
       - "--mine"
       - "--miner.etherbase=0x6f7090364d4ae2c1819693d6382b74c7d004b4b8"
-      - "--password=/.ethereum/config/password.txt"
+      - "--password=/geth/password.txt"
       - "--unlock=0x6f7090364d4ae2c1819693d6382b74c7d004b4b8"
-      - "--keystore=/.ethereum/keystore/"
+      - "--keystore=/geth/"
     networks:
       dev-net:
         ipv4_address: 172.16.254.4
@@ -52,19 +54,20 @@ services:
     << : *geth
     hostname: geth-validator-3
     volumes:
-      - "./data/node3/geth:/.ethereum/" # mount to host
-      - "./config:/.ethereum/config"
-      - "./keystore/keyfile-node3.json:/.ethereum/keystore/key.json" # mount to host
+      - "./data/node3/:/geth/geth" # mount to host
+      - "./config/config.toml:/geth/config.toml:ro"
+      - "./config/password.txt:/geth/password.txt:ro"
+      - "./keystore/keyfile-node3.json:/geth/key.json:ro"
     command:
       - "--sailom"
       - "--allow-insecure-unlock"
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
-      - "--config=/.ethereum/config/config.toml"
+      - "--config=/geth/config.toml"
       - "--mine"
       - "--miner.etherbase=0x7c55259cc19af2ab5f417680884b5b642e20cdc4"
-      - "--password=/.ethereum/config/password.txt"
+      - "--password=/geth/password.txt"
       - "--unlock=0x7c55259cc19af2ab5f417680884b5b642e20cdc4"
-      - "--keystore=/.ethereum/keystore/"
+      - "--keystore=/geth/"
     networks:
       dev-net:
         ipv4_address: 172.16.254.5
@@ -72,12 +75,12 @@ services:
     << : *geth
     hostname: geth-rpc-node
     volumes:
-      - "./data/rpc/geth:/.ethereum/" # mount to host
-      - "./config:/.ethereum/config"
+      - "./data/rpc/:/geth/geth" # mount to host
+      - "./config/config.toml:/geth/config.toml:ro"
     command:
       - "--sailom"
       - "--bootnodes=enode://15b1d1d189830ea4cc54648865fe5fea602d7b92c8cbfb5de4ea267d5186cb722aab122fd3220357d9475a72ba05bfb9bdf0b8c797421b183a1f4c0204a2fb88@172.16.254.3:30303"
-      - "--config=/.ethereum/config/config.toml"
+      - "--config=/geth/config.toml"
     ports:
       - "30303:30303"
       - "8545:8545"
