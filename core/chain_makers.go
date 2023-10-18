@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
+	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -105,6 +106,9 @@ func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transacti
 	}
 	b.txs = append(b.txs, tx)
 	b.receipts = append(b.receipts, receipt)
+	if b.header.BlobGasUsed != nil {
+		*b.header.BlobGasUsed += receipt.BlobGasUsed
+	}
 }
 
 // AddTx adds a transaction to the generated block. If no coinbase has
@@ -392,6 +396,20 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 			parentGasLimit := parent.GasLimit() * chain.Config().ElasticityMultiplier()
 			header.GasLimit = CalcGasLimit(parentGasLimit, parentGasLimit)
 		}
+	}
+	if chain.Config().IsCancun(header.Number, header.Time) {
+		var (
+			parentExcessBlobGas uint64
+			parentBlobGasUsed   uint64
+		)
+		if parent.ExcessBlobGas() != nil {
+			parentExcessBlobGas = *parent.ExcessBlobGas()
+			parentBlobGasUsed = *parent.BlobGasUsed()
+		}
+		excessBlobGas := eip4844.CalcExcessBlobGas(parentExcessBlobGas, parentBlobGasUsed)
+		header.ExcessBlobGas = &excessBlobGas
+		header.BlobGasUsed = new(uint64)
+		header.ParentBeaconRoot = new(common.Hash)
 	}
 	return header
 }
