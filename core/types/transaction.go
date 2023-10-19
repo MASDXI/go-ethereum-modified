@@ -305,6 +305,7 @@ func (tx *Transaction) To() *common.Address {
 	return copyAddressPtr(tx.inner.to())
 }
 
+// @TODO custom gas
 // Cost returns (gas * gasPrice) + (blobGas * blobGasPrice) + value.
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))

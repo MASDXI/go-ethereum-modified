@@ -521,6 +521,7 @@ func (ec *Client) PendingCallContract(ctx context.Context, msg ethereum.CallMsg)
 	return hex, nil
 }
 
+// @TODO custom gas
 // SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 // execution of a transaction.
 func (ec *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
@@ -573,6 +574,7 @@ func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 	}, nil
 }
 
+// @TODO custom gas
 // EstimateGas tries to estimate the gas needed to execute a specific transaction based on
 // the current pending state of the backend blockchain. There is no guarantee that this is
 // the true gas limit requirement as other transactions may be added or removed by miners,
