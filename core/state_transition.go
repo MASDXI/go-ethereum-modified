@@ -230,6 +230,7 @@ func (st *StateTransition) to() common.Address {
 	return *st.msg.To
 }
 
+// @TODO custom gas
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).SetUint64(st.msg.GasLimit)
 	mgval = mgval.Mul(mgval, st.msg.GasPrice)
@@ -444,6 +445,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}, nil
 }
 
+// @TODO custom gas
 func (st *StateTransition) refundGas(refundQuotient uint64) {
 	// Apply refund counter, capped to a refund quotient
 	refund := st.gasUsed() / refundQuotient
