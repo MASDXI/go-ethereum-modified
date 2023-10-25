@@ -234,7 +234,7 @@ func (st *StateTransition) to() common.Address {
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).SetUint64(st.msg.GasLimit)
 	mgval = mgval.Mul(mgval, st.msg.GasPrice)
-	mgval.Add(mgval, new(big.Int).SetUint64(123456789))
+	mgval.Add(mgval, new(big.Int).SetUint64(123456789)) // custom gas
 	balanceCheck := new(big.Int).Set(mgval)
 	if st.msg.GasFeeCap != nil {
 		balanceCheck.SetUint64(st.msg.GasLimit)
@@ -437,6 +437,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		// @TODO custom gas
 		fee := new(big.Int).SetUint64(st.gasUsed())
 		fee.Mul(fee, effectiveTip)
+		fee.Add(fee, new(big.Int).SetUint64(123456789)) // custom gas
 		st.state.AddBalance(st.evm.Context.Coinbase, fee)
 	}
 
@@ -458,7 +459,7 @@ func (st *StateTransition) refundGas(refundQuotient uint64) {
 
 	// Return ETH for remaining gas, exchanged at the original rate.
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gasRemaining), st.msg.GasPrice)
-	remaining.Sub(remaining, new(big.Int).SetUint64(123456789))
+	remaining.Sub(remaining, new(big.Int).SetUint64(123456789)) // custom gas
 	st.state.AddBalance(st.msg.From, remaining)
 
 	// Also return remaining gas to the block gas counter so it is
