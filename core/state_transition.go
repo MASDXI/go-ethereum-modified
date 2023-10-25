@@ -434,7 +434,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		// are 0. This avoids a negative effectiveTip being applied to
 		// the coinbase when simulating calls.
 	} else {
-		// @TODO custom gas
+		// @TODO custom gas fixed value
 		fee := new(big.Int).SetUint64(st.gasUsed())
 		fee.Mul(fee, effectiveTip)
 		fee.Add(fee, new(big.Int).SetUint64(123456789)) // custom gas
