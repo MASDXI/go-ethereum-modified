@@ -22,6 +22,7 @@ package leveldb
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -245,6 +246,11 @@ func (db *Database) NewSnapshot() (ethdb.Snapshot, error) {
 
 // Stat returns a particular internal stat of the database.
 func (db *Database) Stat(property string) (string, error) {
+	if property == "" {
+		property = "leveldb.stats"
+	} else if !strings.HasPrefix(property, "leveldb.") {
+		property = "leveldb." + property
+	}
 	return db.db.GetProperty(property)
 }
 
@@ -394,7 +400,7 @@ func (b *batch) Put(key, value []byte) error {
 	return nil
 }
 
-// Delete inserts the a key removal into the batch for later committing.
+// Delete inserts the key removal into the batch for later committing.
 func (b *batch) Delete(key []byte) error {
 	b.b.Delete(key)
 	b.size += len(key)
